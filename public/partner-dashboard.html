@@ -78,7 +78,19 @@
         let currentUser = null;
         let partnerData = null;
 
-        firebase.auth().onAuthStateChanged(async (user) => {
+        // Initialize when Firebase is ready
+        function initPartnerDashboard() {
+            if (typeof firebase === 'undefined' || !firebase.auth) {
+                setTimeout(initPartnerDashboard, 100);
+                return;
+            }
+
+            console.log('✅ Firebase ready, initializing partner dashboard...');
+            setupAuthListener();
+        }
+
+        function setupAuthListener() {
+            firebase.auth().onAuthStateChanged(async (user) => {
             if (!user) {
                 window.location.href = 'partner-login.html';
                 return;
@@ -134,12 +146,13 @@
                 console.error('Error:', error);
                 alert('Có lỗi xảy ra');
             }
-        });
+            });
 
-        document.getElementById('logout-btn').addEventListener('click', async () => {
-            await firebase.auth().signOut();
-            window.location.href = 'partner-login.html';
-        });
+            document.getElementById('logout-btn').addEventListener('click', async () => {
+                await firebase.auth().signOut();
+                window.location.href = 'partner-login.html';
+            });
+        }
 
         const topicNames = {
             general: 'An toàn chung',
@@ -335,6 +348,13 @@
 
         function closeModal() {
             document.getElementById('contact-modal').style.display = 'none';
+        }
+
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPartnerDashboard);
+        } else {
+            initPartnerDashboard();
         }
     </script>
 </body>

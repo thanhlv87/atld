@@ -330,11 +330,15 @@
         let allRequests = [];
         let currentUser = null;
 
-        // Check auth state
-        firebase.auth().onAuthStateChanged((user) => {
-            currentUser = user;
-            renderRequests();
-        });
+        // Setup auth listener when Firebase is ready
+        function setupAuth() {
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                firebase.auth().onAuthStateChanged((user) => {
+                    currentUser = user;
+                    renderRequests();
+                });
+            }
+        }
 
         // Topic names
         const topicNames = {
@@ -478,6 +482,8 @@
         // Wait for Firebase to load before initial load
         function initDashboard() {
             if (typeof firebase !== 'undefined' && firebase.firestore) {
+                console.log('✅ Firebase ready, initializing dashboard...');
+                setupAuth();
                 loadRequests();
             } else {
                 // Retry after 100ms if Firebase not ready
