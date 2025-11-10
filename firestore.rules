@@ -88,8 +88,15 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Quotes - Partners can create and read their own, customers can read their quotes
     match /quotes/{quoteId} {
-      allow read, write: if isAdmin();
+      allow create: if isPartner();  // Partners can create quotes
+      allow read: if isAdmin() ||
+                     (isPartner() && request.auth.uid == resource.data.partnerId) ||
+                     (request.auth != null);  // Anyone authenticated can read (for customers)
+      allow update: if isAdmin() ||
+                      (isPartner() && request.auth.uid == resource.data.partnerId);
+      allow delete: if isAdmin();
     }
 
     match /contracts/{contractId} {

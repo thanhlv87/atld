@@ -64,12 +64,72 @@
         </div>
     </div>
 
-    <!-- Modal -->
+    <!-- Contact Modal -->
     <div id="contact-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; padding: 2rem;" onclick="if(event.target === this) closeModal()">
         <div style="max-width: 700px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 16px; max-height: 85vh; overflow-y: auto; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
             <button onclick="closeModal()" style="position: absolute; top: 1rem; right: 1rem; background: #f0f0f0; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; line-height: 1; color: #666; transition: all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">×</button>
             <h2 id="modal-title" style="margin-bottom: 1rem; padding-right: 3rem;"></h2>
             <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Quote Modal -->
+    <div id="quote-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; padding: 2rem; overflow-y: auto;" onclick="if(event.target === this) closeQuoteModal()">
+        <div style="max-width: 800px; margin: 2rem auto; background: white; padding: 2.5rem; border-radius: 16px; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+            <button onclick="closeQuoteModal()" style="position: absolute; top: 1rem; right: 1rem; background: #f0f0f0; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; line-height: 1; color: #666; transition: all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">×</button>
+
+            <h2 style="margin-bottom: 0.5rem; color: var(--primary-color);">💰 Gửi Báo giá</h2>
+            <p id="quote-request-info" style="color: var(--gray-color); margin-bottom: 2rem; font-size: 0.95rem;"></p>
+
+            <form id="quote-form" onsubmit="event.preventDefault(); submitQuote();">
+                <div style="display: grid; gap: 1.5rem;">
+                    <!-- Price -->
+                    <div class="form-group">
+                        <label for="quote-price" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-color);">Giá đào tạo <span style="color: red;">*</span></label>
+                        <input type="number" id="quote-price" required min="1" step="0.1" placeholder="VD: 15" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                        <small style="color: var(--gray-color);">Đơn vị: triệu VNĐ</small>
+                    </div>
+
+                    <!-- Duration -->
+                    <div class="form-group">
+                        <label for="quote-duration" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-color);">Thời gian đào tạo <span style="color: red;">*</span></label>
+                        <input type="text" id="quote-duration" required placeholder="VD: 3 ngày, 1 tuần, 20 giờ" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="form-group">
+                        <label for="quote-start-date" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-color);">Ngày bắt đầu dự kiến</label>
+                        <input type="date" id="quote-start-date" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem;">
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label for="quote-description" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-color);">Mô tả chi tiết <span style="color: red;">*</span></label>
+                        <textarea id="quote-description" required rows="6" placeholder="Mô tả chi tiết về chương trình đào tạo, phương pháp giảng dạy, giảng viên, v.v..." style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; resize: vertical;"></textarea>
+                    </div>
+
+                    <!-- Curriculum -->
+                    <div class="form-group">
+                        <label for="quote-curriculum" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--dark-color);">Nội dung khóa học</label>
+                        <textarea id="quote-curriculum" rows="6" placeholder="Chi tiết nội dung các buổi học, module, chương trình..." style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; resize: vertical;"></textarea>
+                    </div>
+
+                    <!-- Notes -->
+                    <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; border-left: 4px solid #ffc107;">
+                        <strong>💡 Lưu ý:</strong> Báo giá của bạn sẽ được gửi đến khách hàng. Hãy đảm bảo thông tin chính xác và chi tiết để tăng cơ hội được chọn.
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
+                        <button type="button" onclick="closeQuoteModal()" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">
+                            Hủy
+                        </button>
+                        <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem;">
+                            📤 Gửi báo giá
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -240,9 +300,14 @@
                             <span>📞 ${req.contactCount || 0}</span>
                         </div>
 
-                        <button class="btn btn-primary" onclick="event.stopPropagation(); viewContact('${req.id}', '${req.requestCode}', ${JSON.stringify(req).replace(/"/g, '&quot;')})" style="width: 100%; padding: 0.6rem; font-size: 0.9rem;">
-                            Xem chi tiết
-                        </button>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <button class="btn btn-secondary" onclick="event.stopPropagation(); viewContact('${req.id}', '${req.requestCode}', ${JSON.stringify(req).replace(/"/g, '&quot;')})" style="padding: 0.6rem; font-size: 0.85rem;">
+                                👁️ Xem chi tiết
+                            </button>
+                            <button class="btn btn-primary" onclick="event.stopPropagation(); openQuoteModal('${req.id}', '${req.requestCode}', ${JSON.stringify(req).replace(/"/g, '&quot;')})" style="padding: 0.6rem; font-size: 0.85rem;">
+                                💰 Gửi báo giá
+                            </button>
+                        </div>
                     `;
                     requestsList.appendChild(card);
                 });
@@ -348,6 +413,104 @@
 
         function closeModal() {
             document.getElementById('contact-modal').style.display = 'none';
+        }
+
+        // Quote Modal Functions
+        let currentQuoteRequest = null;
+
+        window.openQuoteModal = function(requestId, requestCode, reqData) {
+            if (typeof reqData === 'string') {
+                reqData = JSON.parse(reqData);
+            }
+
+            currentQuoteRequest = {
+                id: requestId,
+                code: requestCode,
+                data: reqData
+            };
+
+            const topicDisplay = reqData.topic === 'other' ? reqData.topicOther : topicNames[reqData.topic];
+            document.getElementById('quote-request-info').textContent =
+                `Báo giá cho: ${requestCode} - ${topicDisplay} (${reqData.province})`;
+
+            // Reset form
+            document.getElementById('quote-form').reset();
+            document.getElementById('quote-modal').style.display = 'block';
+        };
+
+        function closeQuoteModal() {
+            document.getElementById('quote-modal').style.display = 'none';
+            currentQuoteRequest = null;
+        }
+
+        async function submitQuote() {
+            if (!currentQuoteRequest) {
+                alert('Lỗi: Không tìm thấy thông tin request');
+                return;
+            }
+
+            const price = parseFloat(document.getElementById('quote-price').value);
+            const duration = document.getElementById('quote-duration').value.trim();
+            const startDate = document.getElementById('quote-start-date').value;
+            const description = document.getElementById('quote-description').value.trim();
+            const curriculum = document.getElementById('quote-curriculum').value.trim();
+
+            if (!price || !duration || !description) {
+                alert('Vui lòng điền đầy đủ thông tin bắt buộc');
+                return;
+            }
+
+            try {
+                // Generate quote code
+                const date = new Date();
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+                const quoteCode = `QT${year}${month}${day}${random}`;
+
+                // Create quote document
+                const quoteData = {
+                    quoteCode: quoteCode,
+                    requestId: currentQuoteRequest.id,
+                    requestCode: currentQuoteRequest.code,
+                    partnerId: currentUser.uid,
+                    partnerName: partnerData.companyName,
+                    partnerEmail: partnerData.email,
+                    partnerPhone: partnerData.phone || '',
+
+                    // Quote details
+                    price: price,
+                    duration: duration,
+                    startDate: startDate || null,
+                    description: description,
+                    curriculum: curriculum || '',
+
+                    // Status
+                    status: 'pending',  // pending, accepted, rejected
+
+                    // Timestamps
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    expiresAt: firebase.firestore.Timestamp.fromDate(
+                        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+                    )
+                };
+
+                console.log('📤 Submitting quote:', quoteData);
+
+                await firebase.firestore().collection('quotes').add(quoteData);
+
+                alert('✅ Đã gửi báo giá thành công!\n\nMã báo giá: ' + quoteCode);
+                closeQuoteModal();
+
+                // Reload requests to show updated quote count
+                loadRequests();
+
+            } catch (error) {
+                console.error('Error submitting quote:', error);
+                alert('Có lỗi xảy ra: ' + error.message);
+            }
         }
 
         // Start initialization
