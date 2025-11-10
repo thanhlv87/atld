@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Helper function to check if user is partner
+    function isPartner() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/partners/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/partners/$(request.auth.uid)).data.status == 'approved' &&
+             get(/databases/$(database)/documents/partners/$(request.auth.uid)).data.subscriptionStatus == 'active';
+    }
+
+    // Admins collection - only admins can read/write
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+      // SPECIAL: Allow initial admin creation when no admins exist
+      allow create: if request.auth != null &&
+                      !exists(/databases/$(database)/documents/admins/$(request.auth.uid)) &&
+                      request.resource.data.role == 'admin';
+    }
+
+    // Businesses collection - anyone can create, only admin can read
+    match /businesses/{businessId} {
+      allow create: if true;  // Anyone can submit business registration
+      allow read, update, delete: if isAdmin();  // Only admin can read/manage
+    }
+
+    // Partners collection - special rules for registration and management
+    match /partners/{partnerId} {
+      allow create: if true;  // Anyone can register as partner
+      allow read: if isAdmin() || (request.auth != null && request.auth.uid == partnerId);
+                  // Admin can read all, partners can read their own
+      allow update: if isAdmin() || (request.auth != null && request.auth.uid == partnerId);
+                    // Admin can update all, partners can update their own
+      allow delete: if isAdmin();  // Only admin can delete
+    }
+
+    // Training Requests - anyone can create, everyone can read public data
+    match /training_requests/{requestId} {
+      allow create: if true;  // Anyone can submit training request
+      allow read: if true;  // Everyone can view requests
+      allow update: if isAdmin() ||
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'contactCount']));
+                      // Admin can update all, anyone can update view/contact counts
+      allow delete: if isAdmin();  // Only admin can delete
+    }
+
+    // Request Views Log - partners can create, authenticated users can read
+    match /request_views/{viewId} {
+      allow create: if isPartner();  // Only approved active partners can log views
+      allow read: if isAdmin() || isPartner();  // Admin and partners can read
+      allow delete: if isAdmin();  // Only admin can delete
+    }
+
+    // Documents - everyone can read, only admin can write
+    match /documents/{documentId} {
+      allow read: if true;  // Anyone can view documents
+      allow create, delete: if isAdmin();  // Only admin can create/delete
+      allow update: if isAdmin() ||
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['downloadCount']));
+                      // Admin can update all, anyone can update downloadCount
+    }
+
+    // Legacy collections for backward compatibility
+    match /training_requests_old/{requestId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /quotes/{quoteId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /contracts/{contractId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
+
+// Storage rules for document files
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /documents/{fileName} {
+      allow read: if true;  // Anyone can download documents
+      allow write: if request.auth != null;  // Only authenticated users (admin) can upload
+    }
+  }
+}
