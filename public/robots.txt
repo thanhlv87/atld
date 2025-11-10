@@ -1,0 +1,27 @@
+# robots.txt for ATLĐ Connect
+# https://atld.web.app
+
+User-agent: *
+Allow: /
+
+# Disallow admin pages
+Disallow: /admin-*
+Disallow: /setup-admin.html
+
+# Disallow private pages
+Disallow: /partner-dashboard.html
+
+# Allow important pages
+Allow: /index.html
+Allow: /courses.html
+Allow: /documents.html
+Allow: /post-request.html
+Allow: /requests-dashboard.html
+Allow: /partner-register.html
+Allow: /partner-login.html
+
+# Sitemap
+Sitemap: https://atld.web.app/sitemap.xml
+
+# Crawl-delay
+Crawl-delay: 1

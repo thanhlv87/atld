@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Tin đào tạo - Admin</title>
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y2NK9VB75H"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-Y2NK9VB75H');
+    </script>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <style>
+        /* Enhanced tab styling */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.6rem 1.2rem;
+            border: 2px solid #e0e0e0;
+            background: white;
+            color: #666;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .tab-btn:hover::before {
+            left: 100%;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,123,255,0.15);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+        }
+
+        .tab-btn.active:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,123,255,0.4);
+        }
+
+        /* Clickable stat cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.25rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
+        }
+
+        .stat-card.active {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, rgba(0,123,255,0.05), rgba(52,152,219,0.05));
+        }
+
+        .stat-card .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .stat-number {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.85rem;
+            color: var(--gray-color);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <div class="admin-logo">ATLĐ Connect Admin</div>
+            <div class="admin-nav-menu">
+                <a href="admin-dashboard.html">Dashboard</a>
+                <a href="admin-partners.html">Đối tác</a>
+                <a href="admin-requests.html" class="active">Tin đào tạo</a>
+                <a href="admin-documents.html">Tài liệu</a>
+                <button id="logout-btn" class="btn btn-small btn-secondary">Đăng xuất</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Quản lý Tin đào tạo</h1>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+            <div class="stat-card" onclick="filterByCard('all')" id="card-all">
+                <div class="stat-icon" style="font-size: 1.5rem;">📋</div>
+                <div class="stat-number" style="font-size: 1.5rem;" id="total-requests">0</div>
+                <div class="stat-label" style="font-size: 0.8rem;">Tổng tin</div>
+            </div>
+            <div class="stat-card" onclick="filterByCard('open')" id="card-open">
+                <div class="stat-icon" style="font-size: 1.5rem;">🟢</div>
+                <div class="stat-number" style="font-size: 1.5rem;" id="open-requests">0</div>
+                <div class="stat-label" style="font-size: 0.8rem;">Đang mở</div>
+            </div>
+            <div class="stat-card" onclick="filterByCard('closed')" id="card-closed">
+                <div class="stat-icon" style="font-size: 1.5rem;">⚫</div>
+                <div class="stat-number" style="font-size: 1.5rem;" id="closed-requests">0</div>
+                <div class="stat-label" style="font-size: 0.8rem;">Đã đóng</div>
+            </div>
+            <div class="stat-card" style="cursor: default;">
+                <div class="stat-icon" style="font-size: 1.5rem;">👁️</div>
+                <div class="stat-number" style="font-size: 1.5rem;" id="total-views">0</div>
+                <div class="stat-label" style="font-size: 0.8rem;">Lượt xem</div>
+            </div>
+            <div class="stat-card" style="cursor: default;">
+                <div class="stat-icon" style="font-size: 1.5rem;">📞</div>
+                <div class="stat-number" style="font-size: 1.5rem;" id="total-contacts">0</div>
+                <div class="stat-label" style="font-size: 0.8rem;">Liên hệ</div>
+            </div>
+        </div>
+
+        <div class="data-table-container">
+            <div class="loading-spinner" id="loading">Đang tải...</div>
+            <div id="requests-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;"></div>
+            <div id="no-data" style="display: none;">Không có dữ liệu</div>
+        </div>
+    </div>
+
+    <!-- Modal for details -->
+    <div id="detail-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; padding: 2rem;" onclick="if(event.target === this) closeDetailModal()">
+        <div style="max-width: 800px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 16px; max-height: 85vh; overflow-y: auto; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+            <button onclick="closeDetailModal()" style="position: absolute; top: 1rem; right: 1rem; background: #f0f0f0; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; line-height: 1; color: #666; transition: all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">×</button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        window.FirebaseHelper.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'admin-login.html';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await window.FirebaseHelper.signOutAdmin();
+            window.location.href = 'admin-login.html';
+        });
+
+        let currentTab = 'all';
+        let allRequests = [];
+        let allViews = [];
+
+        const topicNames = {
+            general: 'An toàn chung',
+            electrical: 'An toàn điện',
+            construction: 'Xây dựng',
+            fire: 'PCCC',
+            chemical: 'Hóa chất',
+            manufacturing: 'Sản xuất',
+            other: 'Khác'
+        };
+
+        const deliveryTypeNames = {
+            onsite: 'Trực tiếp',
+            online: 'Online',
+            both: 'Cả hai'
+        };
+
+        async function loadRequests() {
+            const loading = document.getElementById('loading');
+            const requestsList = document.getElementById('requests-list');
+            const noData = document.getElementById('no-data');
+
+            loading.style.display = 'block';
+            requestsList.innerHTML = '';
+            noData.style.display = 'none';
+
+            try {
+                const [reqSnapshot, viewsSnapshot] = await Promise.all([
+                    firebase.firestore().collection('training_requests').orderBy('createdAt', 'desc').get(),
+                    firebase.firestore().collection('request_views').get()
+                ]);
+
+                allRequests = reqSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                allViews = viewsSnapshot.docs.map(doc => doc.data());
+
+                // Update stats
+                const totalContacts = allRequests.reduce((sum, r) => sum + (r.contactCount || 0), 0);
+                document.getElementById('total-requests').textContent = allRequests.length;
+                document.getElementById('open-requests').textContent = allRequests.filter(r => r.status === 'open').length;
+                document.getElementById('closed-requests').textContent = allRequests.filter(r => r.status === 'closed').length;
+                document.getElementById('total-views').textContent = allViews.length;
+                document.getElementById('total-contacts').textContent = totalContacts;
+
+                // Highlight active card
+                updateActiveCard();
+                renderRequests();
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                loading.style.display = 'none';
+                noData.style.display = 'block';
+            }
+        }
+
+        function renderRequests() {
+            const loading = document.getElementById('loading');
+            const requestsList = document.getElementById('requests-list');
+            const noData = document.getElementById('no-data');
+
+            loading.style.display = 'none';
+
+            let filtered = allRequests;
+            if (currentTab === 'open') {
+                filtered = allRequests.filter(r => r.status === 'open');
+            } else if (currentTab === 'closed') {
+                filtered = allRequests.filter(r => r.status === 'closed');
+            }
+
+            if (filtered.length === 0) {
+                requestsList.innerHTML = '';
+                noData.style.display = 'block';
+                return;
+            }
+
+            noData.style.display = 'none';
+            requestsList.innerHTML = '';
+
+            filtered.forEach(req => {
+                const date = req.createdAt ? new Date(req.createdAt.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+                const topicDisplay = req.topic === 'other' ? req.topicOther : topicNames[req.topic];
+                const location = req.district ? `${req.district}, ${req.province}` : req.province;
+                const requestViews = allViews.filter(v => v.requestId === req.id);
+
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.style.cssText = 'background: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid ' + (req.status === 'open' ? '#28a745' : '#6c757d') + '; cursor: pointer; transition: all 0.3s; height: fit-content;';
+                card.onmouseover = () => card.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                card.onmouseout = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+
+                card.innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.5rem;">${req.requestCode}</div>
+                        <div style="font-size: 1rem; font-weight: 600; color: var(--dark-color); margin-bottom: 0.5rem;">${topicDisplay}</div>
+                        <span class="status-badge ${req.status === 'open' ? 'status-success' : 'status-secondary'}" style="font-size: 0.75rem;">${req.status === 'open' ? '🟢 Đang mở' : '⚫ Đã đóng'}</span>
+                    </div>
+
+                    <div style="font-size: 0.9rem; color: var(--gray-color); margin-bottom: 1rem; line-height: 1.6;">
+                        <div style="margin-bottom: 0.4rem;"><strong>${req.customerName}</strong></div>
+                        <div style="margin-bottom: 0.4rem;">📞 ${req.customerPhone}</div>
+                        <div style="margin-bottom: 0.4rem;">📍 ${location}</div>
+                        <div style="margin-bottom: 0.4rem;">👥 ${req.numTrainees} học viên</div>
+                        <div style="margin-bottom: 0.4rem;">💰 ${req.budget} ${req.budget !== 'Trao đổi sau' ? 'triệu' : ''}</div>
+                        <div style="margin-bottom: 0.4rem;">📅 ${date}</div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--gray-color); margin-bottom: 1rem; padding-top: 1rem; border-top: 1px solid var(--gray-light);">
+                        <span>👁️ ${req.viewCount || 0}</span>
+                        <span>📞 ${req.contactCount || 0}</span>
+                        <span>👥 ${requestViews.length} đối tác</span>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="event.stopPropagation(); viewRequestDetail('${req.id}')" style="width: 100%; padding: 0.6rem; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        Xem chi tiết
+                    </button>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        ${req.status === 'open' ? `
+                            <button class="btn btn-small btn-secondary" onclick="event.stopPropagation(); closeRequest('${req.id}')" style="width: 100%; font-size: 0.85rem;">Đóng</button>
+                        ` : `
+                            <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); reopenRequest('${req.id}')" style="width: 100%; font-size: 0.85rem;">Mở lại</button>
+                        `}
+                        <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); deleteRequest('${req.id}')" style="width: 100%; font-size: 0.85rem;">Xóa</button>
+                    </div>
+                `;
+                requestsList.appendChild(card);
+            });
+        }
+
+        function filterByCard(filter) {
+            currentTab = filter;
+            updateActiveCard();
+            renderRequests();
+        }
+
+        function updateActiveCard() {
+            // Remove active from all cards
+            document.querySelectorAll('.stat-card').forEach(card => card.classList.remove('active'));
+
+            // Add active to current card
+            const activeCard = document.getElementById('card-' + currentTab);
+            if (activeCard) {
+                activeCard.classList.add('active');
+            }
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            updateActiveCard();
+            renderRequests();
+        }
+
+        async function closeRequest(requestId) {
+            if (!confirm('Đóng tin này?')) return;
+
+            try {
+                await firebase.firestore().collection('training_requests').doc(requestId).update({
+                    status: 'closed',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('Đã đóng tin!');
+                loadRequests();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function reopenRequest(requestId) {
+            if (!confirm('Mở lại tin này?')) return;
+
+            try {
+                await firebase.firestore().collection('training_requests').doc(requestId).update({
+                    status: 'open',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('Đã mở lại tin!');
+                loadRequests();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function deleteRequest(requestId) {
+            if (!confirm('XÓA VĨNH VIỄN tin này? Hành động này không thể hoàn tác!')) return;
+
+            try {
+                await firebase.firestore().collection('training_requests').doc(requestId).delete();
+
+                alert('Đã xóa tin!');
+                loadRequests();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function viewRequestDetail(requestId) {
+            const req = allRequests.find(r => r.id === requestId);
+            if (!req) return;
+
+            const date = req.createdAt ? new Date(req.createdAt.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+            const topicDisplay = req.topic === 'other' ? req.topicOther : topicNames[req.topic];
+            const location = req.district ? `${req.district}, ${req.province}` : req.province;
+            const requestViews = allViews.filter(v => v.requestId === req.id);
+
+            document.getElementById('modal-content').innerHTML = `
+                <h2 style="color: var(--primary-color); margin-bottom: 1.5rem;">Chi tiết yêu cầu - ${req.requestCode}</h2>
+
+                <div style="background: var(--light-color); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">📋 Thông tin yêu cầu</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div><strong>Chủ đề:</strong> ${topicDisplay}</div>
+                        <div><strong>Trạng thái:</strong> <span class="status-badge ${req.status === 'open' ? 'status-success' : 'status-secondary'}">${req.status === 'open' ? 'Đang mở' : 'Đã đóng'}</span></div>
+                        <div><strong>Địa điểm:</strong> ${location}</div>
+                        <div><strong>Hình thức:</strong> ${deliveryTypeNames[req.deliveryType]}</div>
+                        <div><strong>Số học viên:</strong> ${req.numTrainees} người</div>
+                        <div><strong>Thời gian:</strong> ${req.timeframe || 'Trao đổi sau'}</div>
+                        <div><strong>Ngân sách:</strong> ${req.budget} ${req.budget !== 'Trao đổi sau' ? 'triệu' : ''}</div>
+                        <div><strong>Ngày đăng:</strong> ${date}</div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <strong>Mô tả chi tiết:</strong>
+                        <p style="margin-top: 0.5rem;">${req.description}</p>
+                    </div>
+                </div>
+
+                <div style="background: #d4edda; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 1.5rem;">
+                    <h3 style="color: #155724; margin-bottom: 1rem;">📞 Thông tin khách hàng</h3>
+                    <div style="font-size: 1.05rem;">
+                        <p style="margin-bottom: 0.75rem;"><strong>Tên:</strong> ${req.customerName}</p>
+                        <p style="margin-bottom: 0.75rem;"><strong>Số điện thoại:</strong> <a href="tel:${req.customerPhone}" style="color: #007bff; font-weight: 600;">${req.customerPhone}</a></p>
+                        <p style="margin-bottom: 0.75rem;"><strong>Email:</strong> <a href="mailto:${req.customerEmail}" style="color: #007bff;">${req.customerEmail}</a></p>
+                        <p style="margin-bottom: 0.75rem;"><strong>Loại hình:</strong> ${req.companyType || 'Không cung cấp'}</p>
+                        <p><strong>Địa chỉ chi tiết:</strong> ${req.address || 'Không cung cấp'}</p>
+                    </div>
+                </div>
+
+                <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">👥 Lịch sử xem (${requestViews.length} lượt)</h3>
+                    ${requestViews.length > 0 ? `
+                        <ul style="list-style: none; padding-left: 0; max-height: 200px; overflow-y: auto;">
+                            ${requestViews.map(v => {
+                                const viewDate = v.viewedAt ? new Date(v.viewedAt.toDate()).toLocaleString('vi-VN') : 'N/A';
+                                return `<li style="padding: 0.5rem 0; border-bottom: 1px solid #ddd;">• <strong>${v.partnerName}</strong> (${v.partnerEmail})<br><small style="color: #666;">${viewDate}</small></li>`;
+                            }).join('')}
+                        </ul>
+                    ` : '<p style="color: #666;">Chưa có đối tác nào xem</p>'}
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    ${req.status === 'open' ? `
+                        <button class="btn btn-secondary" onclick="closeDetailModal(); closeRequest('${req.id}')">Đóng tin</button>
+                    ` : `
+                        <button class="btn btn-primary" onclick="closeDetailModal(); reopenRequest('${req.id}')">Mở lại tin</button>
+                    `}
+                    <button class="btn btn-danger" onclick="closeDetailModal(); deleteRequest('${req.id}')">Xóa tin</button>
+                </div>
+            `;
+            document.getElementById('detail-modal').style.display = 'block';
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+
+        loadRequests();
+    </script>
+</body>
+</html>

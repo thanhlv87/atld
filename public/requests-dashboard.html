@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Nhu cầu Đào tạo | Quản lý yêu cầu ATLĐ | ATLĐ Connect</title>
+    <meta name="description" content="Quản lý và theo dõi các nhu cầu đào tạo an toàn lao động trên dashboard. Kết nối nhanh chóng với doanh nghiệp cần đào tạo tại ATLĐ Connect.">
+    <meta name="keywords" content="dashboard nhu cầu, quản lý đào tạo, nhu cầu atlđ, theo dõi yêu cầu, kết nối đối tác, doanh nghiệp">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://atld.web.app/requests-dashboard.html">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://atld.web.app/requests-dashboard.html">
+    <meta property="og:title" content="Dashboard Nhu cầu Đào tạo | Quản lý yêu cầu ATLĐ">
+    <meta property="og:description" content="Xem và quản lý các nhu cầu đào tạo ATLĐ. Kết nối với doanh nghiệp cần đào tạo an toàn lao động.">
+    <meta property="og:image" content="https://atld.web.app/logo.png">
+    <meta property="og:locale" content="vi_VN">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Dashboard Nhu cầu Đào tạo ATLĐ">
+    <meta name="twitter:description" content="Quản lý và kết nối với các nhu cầu đào tạo an toàn lao động.">
+    <meta name="twitter:image" content="https://atld.web.app/logo.png">
+
+    <!-- Resource Hints -->
+    <link rel="preconnect" href="https://www.googletagmanager.com">
+    <link rel="dns-prefetch" href="https://www.gstatic.com">
+
+    <!-- Google Analytics (Optimized) -->
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-Y2NK9VB75H')</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y2NK9VB75H"></script>
+
+    <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="styles.css"></noscript>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js" defer></script>
+
+    <style>
+        .dashboard-hero {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+            padding: 5rem 1rem;
+        }
+
+        .dashboard-hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .dashboard-hero p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            margin-bottom: 1rem;
+        }
+
+        .dashboard-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .filter-section {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .requests-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .request-card {
+            background: white;
+            padding: 1.25rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+            border-top: 4px solid var(--primary-color);
+            cursor: pointer;
+            height: fit-content;
+        }
+
+        .request-card:hover {
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            transform: translateY(-4px);
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-light);
+        }
+
+        .request-code {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .request-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: #28A745;
+            color: white;
+        }
+
+        .request-status.closed {
+            background: #6C757D;
+        }
+
+        .request-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .request-info-item {
+            display: flex;
+            align-items: start;
+            gap: 0.5rem;
+        }
+
+        .request-info-item strong {
+            min-width: 120px;
+            color: var(--dark-color);
+        }
+
+        .request-description {
+            background: var(--light-color);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .request-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--gray-light);
+        }
+
+        .request-stats {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--gray-color);
+        }
+
+        .btn-view-contact {
+            background: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-view-contact:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .locked-icon {
+            margin-right: 0.5rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .empty-state h2 {
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+        }
+
+        .topic-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: var(--primary-color);
+            color: white;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">ATLĐ Connect</div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="courses.html">Khóa học</a></li>
+                <li><a href="documents.html">Tài liệu</a></li>
+                <li><a href="#how-it-works">Cách thức</a></li>
+                <li><a href="#about">Giới thiệu</a></li>
+                <li><a href="partner-register.html" class="btn-nav-partner">Đối tác</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="dashboard-hero">
+        <h1>Nhu cầu Đào tạo An toàn Lao động</h1>
+        <p>Kết nối doanh nghiệp với đơn vị đào tạo chuyên nghiệp</p>
+        <div class="dashboard-actions">
+            <a href="post-request.html" class="btn btn-large" style="background: white; color: var(--primary-color);">
+                📝 Đăng tin đào tạo
+            </a>
+            <a href="partner-login.html" class="btn btn-large" style="background:  white; color: var(--primary-color);">
+                🔐 Đăng nhập đối tác
+            </a>
+        </div>
+    </section>
+
+    <!-- Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Filters -->
+        <div class="filter-section">
+            <h3 style="margin-bottom: 1rem;">Lọc nhu cầu</h3>
+            <div class="filter-row">
+                <div class="form-group">
+                    <label for="filter-topic">Chủ đề</label>
+                    <select id="filter-topic" class="form-control">
+                        <option value="all">Tất cả</option>
+                        <option value="general">An toàn chung</option>
+                        <option value="electrical">An toàn điện</option>
+                        <option value="construction">Xây dựng</option>
+                        <option value="fire">PCCC</option>
+                        <option value="chemical">Hóa chất</option>
+                        <option value="manufacturing">Sản xuất</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filter-province">Tỉnh/Thành phố</label>
+                    <select id="filter-province" class="form-control">
+                        <option value="all">Tất cả</option>
+                        <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                        <option value="Hà Nội">Hà Nội</option>
+                        <option value="Đà Nẵng">Đà Nẵng</option>
+                        <option value="Bình Dương">Bình Dương</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filter-delivery">Hình thức</label>
+                    <select id="filter-delivery" class="form-control">
+                        <option value="all">Tất cả</option>
+                        <option value="onsite">Trực tiếp</option>
+                        <option value="online">Online</option>
+                        <option value="both">Cả hai</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="filter-status">Trạng thái</label>
+                    <select id="filter-status" class="form-control">
+                        <option value="all">Tất cả</option>
+                        <option value="open">Đang mở</option>
+                        <option value="closed">Đã đóng</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading-spinner" id="loading">Đang tải...</div>
+
+        <!-- Requests List -->
+        <div id="requests-list" class="requests-grid"></div>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="empty-state" style="display: none;">
+            <h2>Chưa có nhu cầu đào tạo nào</h2>
+            <p>Hãy là người đầu tiên đăng tin!</p>
+            <a href="post-request.html" class="btn btn-primary">Đăng tin ngay</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 ATLĐ Connect. Kết nối đào tạo An toàn Lao động.</p>
+        </div>
+    </footer>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        let allRequests = [];
+        let currentUser = null;
+
+        // Check auth state
+        firebase.auth().onAuthStateChanged((user) => {
+            currentUser = user;
+            renderRequests();
+        });
+
+        // Topic names
+        const topicNames = {
+            general: 'An toàn chung',
+            electrical: 'An toàn điện',
+            construction: 'Xây dựng',
+            fire: 'PCCC',
+            chemical: 'Hóa chất',
+            manufacturing: 'Sản xuất',
+            other: 'Khác'
+        };
+
+        const deliveryTypeNames = {
+            onsite: 'Trực tiếp',
+            online: 'Online',
+            both: 'Cả hai'
+        };
+
+        // Load requests
+        async function loadRequests() {
+            const loading = document.getElementById('loading');
+            const requestsList = document.getElementById('requests-list');
+            const emptyState = document.getElementById('empty-state');
+
+            loading.style.display = 'block';
+            requestsList.innerHTML = '';
+            emptyState.style.display = 'none';
+
+            try {
+                const snapshot = await firebase.firestore()
+                    .collection('training_requests')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                allRequests = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                renderRequests();
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                loading.style.display = 'none';
+                emptyState.style.display = 'block';
+            }
+        }
+
+        function renderRequests() {
+            const loading = document.getElementById('loading');
+            const requestsList = document.getElementById('requests-list');
+            const emptyState = document.getElementById('empty-state');
+
+            loading.style.display = 'none';
+
+            // Apply filters
+            const topicFilter = document.getElementById('filter-topic').value;
+            const provinceFilter = document.getElementById('filter-province').value;
+            const deliveryFilter = document.getElementById('filter-delivery').value;
+            const statusFilter = document.getElementById('filter-status').value;
+
+            const filtered = allRequests.filter(req => {
+                if (topicFilter !== 'all' && req.topic !== topicFilter) return false;
+                if (provinceFilter !== 'all' && req.province !== provinceFilter) return false;
+                if (deliveryFilter !== 'all' && req.deliveryType !== deliveryFilter) return false;
+                if (statusFilter !== 'all' && req.status !== statusFilter) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                requestsList.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            requestsList.innerHTML = '';
+
+            filtered.forEach(req => {
+                const date = req.createdAt ? new Date(req.createdAt.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+                const topicDisplay = req.topic === 'other' ? req.topicOther : topicNames[req.topic];
+                const location = req.district ? `${req.district}, ${req.province}` : req.province;
+
+                const card = document.createElement('div');
+                card.className = 'request-card';
+                card.innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.5rem;">${req.requestCode}</div>
+                        <div style="font-size: 1rem; font-weight: 600; color: var(--dark-color); margin-bottom: 0.5rem;">${topicDisplay}</div>
+                        <span class="request-status ${req.status}" style="font-size: 0.75rem;">${req.status === 'open' ? '🟢 Đang mở' : '⚫ Đã đóng'}</span>
+                    </div>
+
+                    <div style="font-size: 0.9rem; color: var(--gray-color); margin-bottom: 1rem; line-height: 1.6;">
+                        <div style="margin-bottom: 0.4rem;">📍 ${location}</div>
+                        <div style="margin-bottom: 0.4rem;">📚 ${deliveryTypeNames[req.deliveryType]}</div>
+                        <div style="margin-bottom: 0.4rem;">👥 ${req.numTrainees} học viên</div>
+                        <div style="margin-bottom: 0.4rem;">💰 ${req.budget} ${req.budget !== 'Trao đổi sau' ? 'triệu' : ''}</div>
+                        <div style="margin-bottom: 0.4rem;">📅 ${date}</div>
+                    </div>
+
+                    <div style="background: var(--light-color); padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.85rem; line-height: 1.5; max-height: 80px; overflow: hidden;">
+                        ${req.description.substring(0, 100)}${req.description.length > 100 ? '...' : ''}
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--gray-color); margin-bottom: 1rem; padding-top: 1rem; border-top: 1px solid var(--gray-light);">
+                        <span>👁️ ${req.viewCount || 0}</span>
+                        <span>📞 ${req.contactCount || 0}</span>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="event.stopPropagation(); viewContact('${req.id}')" style="width: 100%; padding: 0.65rem; font-size: 0.9rem; font-weight: 600; border-radius: 8px;">
+                        🔒 Xem thông tin liên hệ
+                    </button>
+                `;
+                requestsList.appendChild(card);
+            });
+        }
+
+        // View contact - requires login
+        window.viewContact = async function(requestId) {
+            if (!currentUser) {
+                alert('Bạn cần đăng nhập với tài khoản đối tác để xem thông tin liên hệ.');
+                window.location.href = 'partner-login.html?redirect=requests-dashboard.html';
+                return;
+            }
+
+            // Redirect to partner dashboard with request ID
+            window.location.href = `partner-dashboard.html?requestId=${requestId}`;
+        };
+
+        // Filter change handlers
+        document.getElementById('filter-topic').addEventListener('change', renderRequests);
+        document.getElementById('filter-province').addEventListener('change', renderRequests);
+        document.getElementById('filter-delivery').addEventListener('change', renderRequests);
+        document.getElementById('filter-status').addEventListener('change', renderRequests);
+
+        // Initial load
+        loadRequests();
+    </script>
+</body>
+</html>

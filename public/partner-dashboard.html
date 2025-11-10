@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Đối tác - ATLĐ Connect</title>
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y2NK9VB75H"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-Y2NK9VB75H');
+    </script>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <div class="admin-logo">ATLĐ Partner Dashboard</div>
+            <div class="admin-nav-menu">
+                <span id="partner-name" style="color: white; margin-right: 1rem;"></span>
+                <button id="logout-btn" class="btn btn-small btn-secondary">Đăng xuất</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Dashboard Đối tác</h1>
+            <p>Quản lý nhu cầu đào tạo</p>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <div class="stat-number" id="total-requests">0</div>
+                    <div class="stat-label">Tổng nhu cầu</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">👁️</div>
+                <div class="stat-info">
+                    <div class="stat-number" id="total-views">0</div>
+                    <div class="stat-label">Lượt xem của tôi</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Requests List -->
+        <div class="data-table-container">
+            <h2>Danh sách nhu cầu đào tạo</h2>
+            <div class="loading-spinner" id="loading">Đang tải...</div>
+            <div id="requests-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;"></div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="contact-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; padding: 2rem;" onclick="if(event.target === this) closeModal()">
+        <div style="max-width: 700px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 16px; max-height: 85vh; overflow-y: auto; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+            <button onclick="closeModal()" style="position: absolute; top: 1rem; right: 1rem; background: #f0f0f0; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; line-height: 1; color: #666; transition: all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">×</button>
+            <h2 id="modal-title" style="margin-bottom: 1rem; padding-right: 3rem;"></h2>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        let currentUser = null;
+        let partnerData = null;
+
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (!user) {
+                window.location.href = 'partner-login.html';
+                return;
+            }
+
+            currentUser = user;
+
+            try {
+                const partnerDoc = await firebase.firestore().collection('partners').doc(user.uid).get();
+
+                if (!partnerDoc.exists) {
+                    alert('Tài khoản không hợp lệ');
+                    await firebase.auth().signOut();
+                    window.location.href = 'partner-login.html';
+                    return;
+                }
+
+                partnerData = partnerDoc.data();
+
+                document.getElementById('partner-name').textContent = partnerData.companyName;
+
+                // Check activation status
+                if (partnerData.status !== 'approved') {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('requests-list').innerHTML = `
+                        <div style="background: #fff3cd; padding: 2rem; border-radius: 8px; text-align: center; margin: 2rem 0;">
+                            <h3 style="color: #856404;">⏳ Tài khoản đang chờ phê duyệt</h3>
+                            <p>Admin sẽ xem xét và phê duyệt tài khoản của bạn trong thời gian sớm nhất.</p>
+                            <p>Trạng thái hiện tại: <strong>${partnerData.status}</strong></p>
+                            <p style="margin-top: 1rem; color: #666;">Bạn có thể đăng xuất và đăng nhập lại sau khi được phê duyệt.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                if (partnerData.subscriptionStatus !== 'active') {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('requests-list').innerHTML = `
+                        <div style="background: #fff3cd; padding: 2rem; border-radius: 8px; text-align: center; margin: 2rem 0;">
+                            <h3 style="color: #856404;">💳 Subscription chưa được kích hoạt</h3>
+                            <p>Vui lòng thanh toán và liên hệ Admin để kích hoạt subscription.</p>
+                            <p>Gói đăng ký: <strong>${partnerData.accountType === 'company' ? 'Doanh nghiệp (999k/năm)' : 'Cá nhân (199k/năm)'}</strong></p>
+                            <p>Trạng thái: <strong>${partnerData.subscriptionStatus}</strong></p>
+                            <p style="margin-top: 1rem;">Liên hệ: <strong>vietthanh228@gmail.com</strong> hoặc <strong>0982 722 036</strong></p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // All checks passed - load requests
+                loadRequests();
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra');
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await firebase.auth().signOut();
+            window.location.href = 'partner-login.html';
+        });
+
+        const topicNames = {
+            general: 'An toàn chung',
+            electrical: 'An toàn điện',
+            construction: 'Xây dựng',
+            fire: 'PCCC',
+            chemical: 'Hóa chất',
+            manufacturing: 'Sản xuất',
+            other: 'Khác'
+        };
+
+        const deliveryTypeNames = {
+            onsite: 'Trực tiếp',
+            online: 'Online',
+            both: 'Cả hai'
+        };
+
+        async function loadRequests() {
+            const loading = document.getElementById('loading');
+            const requestsList = document.getElementById('requests-list');
+
+            loading.style.display = 'block';
+            requestsList.innerHTML = '';
+
+            try {
+                console.log('Loading training requests...');
+                const snapshot = await firebase.firestore()
+                    .collection('training_requests')
+                    .where('status', '==', 'open')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                console.log('Loaded requests:', snapshot.size);
+
+                const requests = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                document.getElementById('total-requests').textContent = requests.length;
+
+                // Get my view count
+                const viewsSnapshot = await firebase.firestore()
+                    .collection('request_views')
+                    .where('partnerId', '==', currentUser.uid)
+                    .get();
+
+                document.getElementById('total-views').textContent = viewsSnapshot.size;
+
+                loading.style.display = 'none';
+
+                if (requests.length === 0) {
+                    requestsList.innerHTML = '<p>Chưa có nhu cầu đào tạo nào</p>';
+                    return;
+                }
+
+                requests.forEach(req => {
+                    const date = req.createdAt ? new Date(req.createdAt.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+                    const topicDisplay = req.topic === 'other' ? req.topicOther : topicNames[req.topic];
+                    const location = req.district ? `${req.district}, ${req.province}` : req.province;
+
+                    const card = document.createElement('div');
+                    card.className = 'request-card';
+                    card.style.cssText = 'background: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid var(--primary-color); cursor: pointer; transition: all 0.3s; height: fit-content;';
+                    card.onmouseover = () => card.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                    card.onmouseout = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+
+                    card.innerHTML = `
+                        <div style="margin-bottom: 1rem;">
+                            <div style="font-size: 0.85rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.5rem;">${req.requestCode}</div>
+                            <div style="font-size: 1rem; font-weight: 600; color: var(--dark-color); margin-bottom: 0.75rem;">${topicDisplay}</div>
+                        </div>
+
+                        <div style="font-size: 0.9rem; color: var(--gray-color); margin-bottom: 1rem; line-height: 1.6;">
+                            <div style="margin-bottom: 0.4rem;">📍 ${location}</div>
+                            <div style="margin-bottom: 0.4rem;">👥 ${req.numTrainees} học viên</div>
+                            <div style="margin-bottom: 0.4rem;">💰 ${req.budget} ${req.budget !== 'Trao đổi sau' ? 'triệu' : ''}</div>
+                            <div style="margin-bottom: 0.4rem;">📅 ${date}</div>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--gray-color); margin-bottom: 1rem;">
+                            <span>👁️ ${req.viewCount || 0}</span>
+                            <span>📞 ${req.contactCount || 0}</span>
+                        </div>
+
+                        <button class="btn btn-primary" onclick="event.stopPropagation(); viewContact('${req.id}', '${req.requestCode}', ${JSON.stringify(req).replace(/"/g, '&quot;')})" style="width: 100%; padding: 0.6rem; font-size: 0.9rem;">
+                            Xem chi tiết
+                        </button>
+                    `;
+                    requestsList.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                console.error('Error details:', error.message, error.code);
+                loading.style.display = 'none';
+                requestsList.innerHTML = `<p style="color: red;">Có lỗi xảy ra khi tải dữ liệu: ${error.message}</p>`;
+
+                // Show index creation link if needed
+                if (error.code === 'failed-precondition' || error.message.includes('index')) {
+                    requestsList.innerHTML += '<p><a href="' + error.message.match(/https:\/\/[^\s]+/)?.[0] + '" target="_blank">Click để tạo index</a></p>';
+                }
+            }
+        }
+
+        async function viewContact(requestId, requestCode, reqData) {
+            try {
+                // Parse reqData if it's a string
+                if (typeof reqData === 'string') {
+                    reqData = JSON.parse(reqData);
+                }
+
+                // Log view
+                await firebase.firestore().collection('request_views').add({
+                    requestId: requestId,
+                    partnerId: currentUser.uid,
+                    partnerName: partnerData.companyName,
+                    partnerEmail: partnerData.email,
+                    viewedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Increment contact count
+                await firebase.firestore().collection('training_requests').doc(requestId).update({
+                    contactCount: firebase.firestore.FieldValue.increment(1)
+                });
+
+                // Update partner stats
+                await firebase.firestore().collection('partners').doc(currentUser.uid).update({
+                    totalViews: firebase.firestore.FieldValue.increment(1),
+                    totalContacts: firebase.firestore.FieldValue.increment(1)
+                });
+
+                // Format data for display
+                const topicDisplay = reqData.topic === 'other' ? reqData.topicOther : topicNames[reqData.topic];
+                const location = reqData.district ? `${reqData.district}, ${reqData.province}` : reqData.province;
+                // Handle date - might be Timestamp object or already converted
+                let date = 'N/A';
+                if (reqData.createdAt) {
+                    if (typeof reqData.createdAt.toDate === 'function') {
+                        date = new Date(reqData.createdAt.toDate()).toLocaleDateString('vi-VN');
+                    } else if (reqData.createdAt.seconds) {
+                        date = new Date(reqData.createdAt.seconds * 1000).toLocaleDateString('vi-VN');
+                    }
+                }
+
+                // Show full request details + contact info
+                document.getElementById('modal-title').textContent = 'Chi tiết yêu cầu - ' + requestCode;
+                document.getElementById('modal-content').innerHTML = `
+                    <div style="margin: 1.5rem 0;">
+                        <div style="background: var(--light-color); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                            <h3 style="color: var(--primary-color); margin-bottom: 1rem;">📋 Thông tin yêu cầu</h3>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div><strong>Chủ đề:</strong> ${topicDisplay}</div>
+                                <div><strong>Địa điểm:</strong> ${location}</div>
+                                <div><strong>Hình thức:</strong> ${deliveryTypeNames[reqData.deliveryType]}</div>
+                                <div><strong>Số học viên:</strong> ${reqData.numTrainees} người</div>
+                                <div><strong>Thời gian:</strong> ${reqData.timeframe || 'Trao đổi sau'}</div>
+                                <div><strong>Ngân sách:</strong> ${reqData.budget} ${reqData.budget !== 'Trao đổi sau' ? 'triệu' : ''}</div>
+                            </div>
+                            <div style="margin-top: 1rem;">
+                                <strong>Mô tả chi tiết:</strong>
+                                <p style="margin-top: 0.5rem;">${reqData.description}</p>
+                            </div>
+                        </div>
+
+                        <div style="background: #d4edda; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #28a745;">
+                            <h3 style="color: #155724; margin-bottom: 1rem;">📞 Thông tin liên hệ</h3>
+                            <div style="font-size: 1.05rem;">
+                                <p style="margin-bottom: 0.75rem;"><strong>Khách hàng:</strong> ${reqData.customerName}</p>
+                                <p style="margin-bottom: 0.75rem;"><strong>Số điện thoại:</strong> <a href="tel:${reqData.customerPhone}" style="color: #007bff; font-weight: 600;">${reqData.customerPhone}</a></p>
+                                <p style="margin-bottom: 0.75rem;"><strong>Email:</strong> <a href="mailto:${reqData.customerEmail}" style="color: #007bff;">${reqData.customerEmail}</a></p>
+                                <p style="margin-bottom: 0.75rem;"><strong>Loại hình:</strong> ${reqData.companyType || 'Không cung cấp'}</p>
+                                <p><strong>Địa chỉ chi tiết:</strong> ${reqData.address || 'Không cung cấp'}</p>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; padding: 1rem; background: #fff3cd; border-radius: 8px; text-align: center;">
+                            <p style="color: #856404; margin: 0;">✅ Bạn đã xem thông tin này. Hãy liên hệ khách hàng ngay để tư vấn và báo giá!</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('contact-modal').style.display = 'block';
+
+                // Reload to update stats
+                setTimeout(() => loadRequests(), 1000);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra: ' + error.message);
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('contact-modal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "hosting": {
+    "site": "atld",
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|js|css|woff|woff2|ttf|eot)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=3600"
+          }
+        ]
+      }
+    ]
+  },
+  "extensions": {
+    "firestore-send-email": "firebase/firestore-send-email@0.2.4"
+  }
+}

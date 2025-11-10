@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tài liệu An toàn Lao động | Bài giảng & Văn bản pháp luật | ATLĐ Connect</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Tải miễn phí tài liệu, bài giảng và văn bản pháp luật về an toàn lao động. Thư viện tài liệu ATLĐ phong phú, cập nhật thường xuyên tại ATLĐ Connect.">
+    <meta name="keywords" content="tài liệu an toàn lao động, bài giảng atlđ, văn bản pháp luật, quy định an toàn, hướng dẫn đào tạo, lao động">
+    <meta name="theme-color" content="#dc2626">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://atld.web.app/documents.html">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://atld.web.app/documents.html">
+    <meta property="og:title" content="Tài liệu An toàn Lao động | Bài giảng & Văn bản ATLĐ">
+    <meta property="og:description" content="Tải miễn phí tài liệu, bài giảng và văn bản pháp luật về ATLĐ. Thư viện tài liệu phong phú, cập nhật thường xuyên.">
+    <meta property="og:image" content="https://atld.web.app/logo.png">
+    <meta property="og:locale" content="vi_VN">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Tài liệu An toàn Lao động | ATLĐ Connect">
+    <meta name="twitter:description" content="Thư viện tài liệu ATLĐ miễn phí - Bài giảng, văn bản pháp luật và tài liệu chuyên ngành.">
+    <meta name="twitter:image" content="https://atld.web.app/logo.png">
+
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/png" href="/logo.png">
+    <link rel="apple-touch-icon" href="/logo.png">
+
+    <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="styles.css"></noscript>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+    <style>
+        .documents-section {
+            padding: 60px 0;
+            background-color: var(--light-color);
+        }
+
+        .documents-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section-intro {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-intro h2 {
+            font-size: 2rem;
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+        }
+
+        .section-intro p {
+            font-size: 1.1rem;
+            color: var(--gray-color);
+        }
+
+        .documents-filter {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .filter-tab {
+            padding: 10px 24px;
+            border: 2px solid var(--gray-light);
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .filter-tab:hover,
+        .filter-tab.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .documents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .document-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+        }
+
+        .document-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .document-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 1rem;
+            color: white;
+        }
+
+        .document-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .document-type {
+            font-size: 0.85rem;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .document-body {
+            padding: 1.5rem;
+        }
+
+        .document-title {
+            font-size: 1.25rem;
+            color: var(--dark-color);
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+        }
+
+        .document-description {
+            color: var(--gray-color);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .document-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--gray-color);
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .document-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .document-footer {
+            display: flex;
+            gap: 0.75rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--gray-light);
+        }
+
+        .btn-download {
+            flex: 1;
+            background: var(--primary-color);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-download:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn-view {
+            flex: 1;
+            background: white;
+            color: var(--primary-color);
+            padding: 10px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            text-align: center;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-view:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .empty-state-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: var(--gray-color);
+            font-size: 1rem;
+        }
+
+        .upload-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 3rem;
+            display: none;
+        }
+
+        .upload-section.admin-visible {
+            display: block;
+        }
+
+        .upload-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-light);
+        }
+
+        .upload-header h3 {
+            font-size: 1.5rem;
+            color: var(--dark-color);
+        }
+
+        .upload-form {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .documents-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-tabs {
+                flex-direction: column;
+            }
+
+            .document-footer {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">ATLĐ Connect</div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="courses.html">Khóa học</a></li>
+                <li><a href="documents.html" class="active">Tài liệu</a></li>
+                <li><a href="index.html#how-it-works">Cách thức</a></li>
+                <li><a href="index.html#about">Giới thiệu</a></li>
+                <li><a href="post-request.html" class="btn-nav">Đăng ký đào tạo</a></li>
+                <li><a href="partner-register.html" class="btn-nav-partner">Đối tác</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1>📚 Tài liệu học tập</h1>
+            <p>Tài liệu, bài giảng và tư liệu chuyên ngành An toàn Lao động</p>
+        </div>
+    </section>
+
+    <!-- Documents Section -->
+    <section class="documents-section">
+        <div class="documents-container">
+            <!-- Admin Upload Section (only visible when logged in) -->
+            <div class="upload-section" id="upload-section">
+                <div class="upload-header">
+                    <h3>📤 Upload tài liệu mới</h3>
+                    <a href="admin-dashboard.html" class="btn btn-small btn-primary">Admin Dashboard</a>
+                </div>
+                <form class="upload-form" id="upload-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="doc-title">Tiêu đề tài liệu <span class="required">*</span></label>
+                            <input type="text" id="doc-title" required placeholder="VD: Hướng dẫn an toàn điện">
+                        </div>
+                        <div class="form-group">
+                            <label for="doc-category">Danh mục <span class="required">*</span></label>
+                            <select id="doc-category" required>
+                                <option value="">-- Chọn danh mục --</option>
+                                <option value="general">An toàn chung</option>
+                                <option value="construction">Xây dựng</option>
+                                <option value="electrical">Điện</option>
+                                <option value="fire">Phòng cháy chữa cháy</option>
+                                <option value="chemical">Hóa chất</option>
+                                <option value="manufacturing">Sản xuất</option>
+                                <option value="regulations">Văn bản pháp luật</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="doc-description">Mô tả</label>
+                        <textarea id="doc-description" rows="3" placeholder="Mô tả ngắn gọn về tài liệu"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="doc-file">File tài liệu <span class="required">*</span></label>
+                            <input type="file" id="doc-file" required accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx">
+                        </div>
+                        <div class="form-group">
+                            <label for="doc-pages">Số trang</label>
+                            <input type="number" id="doc-pages" placeholder="VD: 25">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">📤 Upload tài liệu</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Section Intro -->
+            <div class="section-intro">
+                <h2>Thư viện tài liệu</h2>
+                <p>Tổng hợp tài liệu, bài giảng và văn bản pháp luật về An toàn Lao động</p>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="documents-filter">
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-category="all">Tất cả</button>
+                    <button class="filter-tab" data-category="general">An toàn chung</button>
+                    <button class="filter-tab" data-category="construction">Xây dựng</button>
+                    <button class="filter-tab" data-category="electrical">Điện</button>
+                    <button class="filter-tab" data-category="fire">PCCC</button>
+                    <button class="filter-tab" data-category="chemical">Hóa chất</button>
+                    <button class="filter-tab" data-category="manufacturing">Sản xuất</button>
+                    <button class="filter-tab" data-category="regulations">Văn bản pháp luật</button>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div id="loading" style="text-align: center; padding: 3rem;">
+                <p style="color: var(--gray-color);">Đang tải tài liệu...</p>
+            </div>
+
+            <!-- Documents Grid -->
+            <div class="documents-grid" id="documents-grid" style="display: none;">
+                <!-- Documents will be loaded here -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-state-icon">📚</div>
+                <h3>Chưa có tài liệu</h3>
+                <p>Tài liệu sẽ được cập nhật sớm. Vui lòng quay lại sau!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>ATLĐ Connect</h3>
+                    <p>Nền tảng kết nối đào tạo An toàn Lao động hàng đầu Việt Nam</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Liên kết</h4>
+                    <ul>
+                        <li><a href="index.html">Trang chủ</a></li>
+                        <li><a href="courses.html">Khóa học</a></li>
+                        <li><a href="documents.html">Tài liệu</a></li>
+                        <li><a href="index.html#how-it-works">Cách thức hoạt động</a></li>
+                        <li><a href="index.html#about">Giới thiệu</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Dành cho</h4>
+                    <ul>
+                        <li><a href="post-request.html">Đăng ký đào tạo</a></li>
+                        <li><a href="partner-register.html">Đối tác đào tạo</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Liên hệ</h4>
+                    <ul>
+                        <li>Email: vietthanh228@gmail.com</li>
+                        <li>Hotline: 0982 722 036</li>
+                        <li>Địa chỉ: 135 Núi Trúc, Giảng Võ, Hà Nội</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 ATLĐ Connect. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="firebase-config.js"></script>
+    <script>
+        // Category Icons
+        const categoryIcons = {
+            general: '📋',
+            construction: '🏗️',
+            electrical: '⚡',
+            fire: '🔥',
+            chemical: '🧪',
+            manufacturing: '🏭',
+            regulations: '📜'
+        };
+
+        // Category Names
+        const categoryNames = {
+            general: 'An toàn chung',
+            construction: 'Xây dựng',
+            electrical: 'Điện',
+            fire: 'Phòng cháy chữa cháy',
+            chemical: 'Hóa chất',
+            manufacturing: 'Sản xuất',
+            regulations: 'Văn bản pháp luật'
+        };
+
+        // Check if admin
+        window.FirebaseHelper.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('upload-section').classList.add('admin-visible');
+            }
+        });
+
+        // Sample documents (replace with Firebase data later)
+        const sampleDocuments = [
+            {
+                id: '1',
+                title: 'Hướng dẫn an toàn điện cơ bản',
+                description: 'Tài liệu hướng dẫn các nguyên tắc an toàn khi làm việc với điện',
+                category: 'electrical',
+                fileType: 'PDF',
+                pages: 35,
+                size: '2.5 MB',
+                date: '2025-01-15',
+                downloadUrl: '#'
+            },
+            {
+                id: '2',
+                title: 'An toàn lao động trong xây dựng',
+                description: 'Quy trình và tiêu chuẩn an toàn cho công trường xây dựng',
+                category: 'construction',
+                fileType: 'PDF',
+                pages: 48,
+                size: '3.8 MB',
+                date: '2025-01-10',
+                downloadUrl: '#'
+            },
+            {
+                id: '3',
+                title: 'Luật an toàn lao động 2025',
+                description: 'Văn bản pháp luật về an toàn vệ sinh lao động mới nhất',
+                category: 'regulations',
+                fileType: 'PDF',
+                pages: 120,
+                size: '5.2 MB',
+                date: '2025-01-05',
+                downloadUrl: '#'
+            },
+            {
+                id: '4',
+                title: 'Hướng dẫn phòng cháy chữa cháy',
+                description: 'Kiến thức cơ bản về PCCC và sử dụng thiết bị chữa cháy',
+                category: 'fire',
+                fileType: 'PowerPoint',
+                pages: 25,
+                size: '4.1 MB',
+                date: '2025-01-03',
+                downloadUrl: '#'
+            },
+            {
+                id: '5',
+                title: 'An toàn khi làm việc với hóa chất',
+                description: 'Hướng dẫn xử lý, bảo quản và sử dụng hóa chất an toàn',
+                category: 'chemical',
+                fileType: 'PDF',
+                pages: 42,
+                size: '3.2 MB',
+                date: '2024-12-28',
+                downloadUrl: '#'
+            },
+            {
+                id: '6',
+                title: 'An toàn máy móc trong sản xuất',
+                description: 'Quy trình vận hành máy móc an toàn trong nhà máy',
+                category: 'manufacturing',
+                fileType: 'PDF',
+                pages: 38,
+                size: '2.9 MB',
+                date: '2024-12-20',
+                downloadUrl: '#'
+            }
+        ];
+
+        let currentCategory = 'all';
+        let documents = [];
+
+        // Load documents from Firebase
+        async function loadDocuments() {
+            const loading = document.getElementById('loading');
+            const grid = document.getElementById('documents-grid');
+            const emptyState = document.getElementById('empty-state');
+
+            loading.style.display = 'block';
+            grid.style.display = 'none';
+            emptyState.style.display = 'none';
+
+            try {
+                const snapshot = await firebase.firestore()
+                    .collection('documents')
+                    .orderBy('uploadedAt', 'desc')
+                    .get();
+
+                documents = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        title: data.title,
+                        description: data.description || '',
+                        category: data.category,
+                        fileType: data.fileType,
+                        pages: data.pages || 0,
+                        size: formatFileSize(data.fileSize),
+                        downloadUrl: data.downloadURL,
+                        downloadCount: data.downloadCount || 0,
+                        date: data.uploadedAt ? new Date(data.uploadedAt.toDate()).toLocaleDateString('vi-VN') : 'N/A'
+                    };
+                });
+
+                // If no documents from Firebase, use sample data
+                if (documents.length === 0) {
+                    documents = sampleDocuments;
+                }
+
+                renderDocuments();
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                // Fallback to sample data
+                documents = sampleDocuments;
+                renderDocuments();
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes || bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Render documents
+        function renderDocuments() {
+            const grid = document.getElementById('documents-grid');
+            const loading = document.getElementById('loading');
+            const emptyState = document.getElementById('empty-state');
+
+            const filtered = currentCategory === 'all'
+                ? documents
+                : documents.filter(doc => doc.category === currentCategory);
+
+            loading.style.display = 'none';
+
+            if (filtered.length === 0) {
+                grid.style.display = 'none';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            grid.style.display = 'grid';
+            grid.innerHTML = '';
+
+            filtered.forEach(doc => {
+                const card = document.createElement('div');
+                card.className = 'document-card';
+                card.innerHTML = `
+                    <div class="document-header">
+                        <div class="document-icon">${categoryIcons[doc.category]}</div>
+                        <div class="document-type">${categoryNames[doc.category]}</div>
+                    </div>
+                    <div class="document-body">
+                        <h3 class="document-title">${doc.title}</h3>
+                        <p class="document-description">${doc.description}</p>
+                        <div class="document-meta">
+                            <span>📄 ${doc.fileType}</span>
+                            <span>📃 ${doc.pages} trang</span>
+                            <span>💾 ${doc.size}</span>
+                            ${doc.downloadCount ? `<span>📥 ${doc.downloadCount} lượt tải</span>` : ''}
+                        </div>
+                        <div class="document-footer">
+                            <a href="${doc.downloadUrl}" class="btn-download" data-doc-id="${doc.id}" download>Tải xuống</a>
+                            <a href="${doc.downloadUrl}" class="btn-view" target="_blank">Xem trước</a>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+
+                // Add click event to track downloads
+                const downloadBtn = card.querySelector('.btn-download');
+                downloadBtn.addEventListener('click', () => trackDownload(doc.id));
+            });
+        }
+
+        // Filter tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentCategory = tab.dataset.category;
+                renderDocuments();
+            });
+        });
+
+        // Upload form (redirect to admin page)
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            alert('Vui lòng đăng nhập Admin để upload tài liệu!');
+            window.location.href = 'admin-login.html';
+        });
+
+        // Track download
+        async function trackDownload(docId) {
+            if (!docId) return;
+
+            try {
+                const docRef = firebase.firestore().collection('documents').doc(docId);
+
+                // Increment download count
+                await docRef.update({
+                    downloadCount: firebase.firestore.FieldValue.increment(1)
+                });
+
+                console.log('Download tracked for document:', docId);
+            } catch (error) {
+                console.error('Error tracking download:', error);
+                // Don't block download if tracking fails
+            }
+        }
+
+        // Initial load
+        loadDocuments();
+    </script>
+
+    <!-- PWA Service Worker -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(reg => console.log('Service Worker registered'))
+                .catch(err => console.log('Service Worker registration failed'));
+        }
+    </script>
+</body>
+</html>

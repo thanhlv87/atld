@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Tài liệu - Admin Dashboard</title>
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y2NK9VB75H"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-Y2NK9VB75H');
+    </script>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+
+    <style>
+        .upload-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 2rem;
+        }
+
+        .upload-header {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-light);
+        }
+
+        .upload-header h2 {
+            font-size: 1.5rem;
+            color: var(--dark-color);
+        }
+
+        .upload-area {
+            border: 3px dashed var(--gray-light);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            background: var(--light-color);
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1.5rem;
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: var(--primary-color);
+            background: #fee2e2;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            font-size: 0.9rem;
+            color: var(--gray-color);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .selected-file {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 2px solid var(--success-color);
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .selected-file.visible {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .file-size {
+            font-size: 0.85rem;
+            color: var(--gray-color);
+        }
+
+        .remove-file {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .progress-bar-container {
+            background: var(--gray-light);
+            border-radius: 8px;
+            height: 8px;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar-container.visible {
+            display: block;
+        }
+
+        .progress-bar {
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .documents-list {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--gray-light);
+        }
+
+        .list-header h2 {
+            font-size: 1.5rem;
+            color: var(--dark-color);
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .filter-select {
+            flex: 1;
+            padding: 10px 16px;
+            border: 2px solid var(--gray-light);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .doc-table th {
+            background: var(--light-color);
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark-color);
+            border-bottom: 2px solid var(--gray-light);
+        }
+
+        .doc-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .doc-table tbody tr:hover {
+            background: var(--light-color);
+        }
+
+        .category-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .action-btns-small {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-icon {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+
+        .btn-view-doc {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-delete-doc {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-icon:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <div class="admin-logo">ATLĐ Connect Admin</div>
+            <div class="admin-nav-menu">
+                <a href="admin-dashboard.html">Dashboard</a>
+                <a href="admin-partners.html">Đối tác</a>
+                <a href="admin-requests.html">Tin đào tạo</a>
+                <a href="admin-documents.html" class="active">Tài liệu</a>
+                <button id="logout-btn" class="btn btn-small btn-secondary">Đăng xuất</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Content -->
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>📚 Quản lý Tài liệu</h1>
+            <p>Upload và quản lý tài liệu học tập</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📄</div>
+                <div class="stat-info">
+                    <div class="stat-number" id="total-docs">0</div>
+                    <div class="stat-label">Tổng tài liệu</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📥</div>
+                <div class="stat-info">
+                    <div class="stat-number" id="total-downloads">0</div>
+                    <div class="stat-label">Tổng lượt tải</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">⭐</div>
+                <div class="stat-info">
+                    <div class="stat-number" id="avg-downloads">0</div>
+                    <div class="stat-label">Trung bình/tài liệu</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🔥</div>
+                <div class="stat-info">
+                    <div class="stat-number" id="top-doc-count">0</div>
+                    <div class="stat-label">Nhiều lượt tải nhất</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="upload-card">
+            <div class="upload-header">
+                <h2>📤 Upload tài liệu mới</h2>
+            </div>
+
+            <form id="upload-form">
+                <!-- Drag & Drop Area -->
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">Kéo thả file vào đây hoặc click để chọn</div>
+                    <div class="upload-hint">Hỗ trợ: PDF, Word, Excel, PowerPoint (Max: 10MB)</div>
+                </div>
+                <input type="file" id="file-input" class="file-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx">
+
+                <!-- Selected File Info -->
+                <div class="selected-file" id="selected-file">
+                    <div class="file-info">
+                        <div class="file-name" id="file-name"></div>
+                        <div class="file-size" id="file-size"></div>
+                    </div>
+                    <button type="button" class="remove-file" id="remove-file">Xóa</button>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-bar-container" id="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+
+                <!-- Form Fields -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="doc-title">Tiêu đề tài liệu <span class="required">*</span></label>
+                        <input type="text" id="doc-title" required placeholder="VD: Hướng dẫn an toàn điện">
+                    </div>
+                    <div class="form-group">
+                        <label for="doc-category">Danh mục <span class="required">*</span></label>
+                        <select id="doc-category" required>
+                            <option value="">-- Chọn danh mục --</option>
+                            <option value="general">An toàn chung</option>
+                            <option value="construction">Xây dựng</option>
+                            <option value="electrical">Điện</option>
+                            <option value="fire">Phòng cháy chữa cháy</option>
+                            <option value="chemical">Hóa chất</option>
+                            <option value="manufacturing">Sản xuất</option>
+                            <option value="regulations">Văn bản pháp luật</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="doc-description">Mô tả</label>
+                    <textarea id="doc-description" rows="3" placeholder="Mô tả ngắn gọn về tài liệu"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="doc-pages">Số trang</label>
+                        <input type="number" id="doc-pages" placeholder="VD: 25">
+                    </div>
+                    <div class="form-group">
+                        <label for="doc-author">Tác giả</label>
+                        <input type="text" id="doc-author" placeholder="VD: Bộ Lao động">
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" id="submit-btn">📤 Upload tài liệu</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Documents List -->
+        <div class="documents-list">
+            <div class="list-header">
+                <h2>Danh sách tài liệu</h2>
+                <a href="documents.html" class="btn btn-small btn-primary" target="_blank">Xem trang công khai</a>
+            </div>
+
+            <div class="filter-controls">
+                <select class="filter-select" id="filter-category">
+                    <option value="all">Tất cả danh mục</option>
+                    <option value="general">An toàn chung</option>
+                    <option value="construction">Xây dựng</option>
+                    <option value="electrical">Điện</option>
+                    <option value="fire">Phòng cháy chữa cháy</option>
+                    <option value="chemical">Hóa chất</option>
+                    <option value="manufacturing">Sản xuất</option>
+                    <option value="regulations">Văn bản pháp luật</option>
+                </select>
+            </div>
+
+            <div class="loading-spinner" id="loading">Đang tải...</div>
+
+            <div style="overflow-x: auto;">
+                <table class="doc-table" id="doc-table" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Tiêu đề</th>
+                            <th>Danh mục</th>
+                            <th>Loại file</th>
+                            <th>Kích thước</th>
+                            <th>📥 Lượt tải</th>
+                            <th>Ngày upload</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="doc-tbody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="no-data" id="no-data" style="display: none;">
+                Chưa có tài liệu nào
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        // Check auth
+        window.FirebaseHelper.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'admin-login.html';
+            }
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await window.FirebaseHelper.signOut();
+            window.location.href = 'admin-login.html';
+        });
+
+        // Category names
+        const categoryNames = {
+            general: 'An toàn chung',
+            construction: 'Xây dựng',
+            electrical: 'Điện',
+            fire: 'PCCC',
+            chemical: 'Hóa chất',
+            manufacturing: 'Sản xuất',
+            regulations: 'Văn bản pháp luật'
+        };
+
+        // File handling
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const selectedFileDiv = document.getElementById('selected-file');
+        const fileNameSpan = document.getElementById('file-name');
+        const fileSizeSpan = document.getElementById('file-size');
+        const removeFileBtn = document.getElementById('remove-file');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+
+        let selectedFile = null;
+
+        // Click to select file
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // File selected
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+        });
+
+        // Drag & Drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (!file) return;
+
+            // Check file type
+            const allowedTypes = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'application/vnd.ms-powerpoint',
+                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                alert('Loại file không hỗ trợ! Vui lòng chọn file PDF, Word, Excel hoặc PowerPoint.');
+                return;
+            }
+
+            // Check file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File quá lớn! Vui lòng chọn file dưới 10MB.');
+                return;
+            }
+
+            selectedFile = file;
+            fileNameSpan.textContent = file.name;
+            fileSizeSpan.textContent = formatFileSize(file.size);
+            selectedFileDiv.classList.add('visible');
+        }
+
+        removeFileBtn.addEventListener('click', () => {
+            selectedFile = null;
+            fileInput.value = '';
+            selectedFileDiv.classList.remove('visible');
+        });
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function getFileType(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const types = {
+                'pdf': 'PDF',
+                'doc': 'Word',
+                'docx': 'Word',
+                'ppt': 'PowerPoint',
+                'pptx': 'PowerPoint',
+                'xls': 'Excel',
+                'xlsx': 'Excel'
+            };
+            return types[ext] || 'Unknown';
+        }
+
+        // Upload form
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!selectedFile) {
+                alert('Vui lòng chọn file!');
+                return;
+            }
+
+            const title = document.getElementById('doc-title').value;
+            const category = document.getElementById('doc-category').value;
+            const description = document.getElementById('doc-description').value;
+            const pages = document.getElementById('doc-pages').value;
+            const author = document.getElementById('doc-author').value;
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang upload...';
+
+            progressContainer.classList.add('visible');
+            progressBar.style.width = '0%';
+
+            try {
+                // Upload to Firebase Storage
+                const storageRef = firebase.storage().ref();
+                const fileName = `${Date.now()}_${selectedFile.name}`;
+                const fileRef = storageRef.child(`documents/${fileName}`);
+
+                const uploadTask = fileRef.put(selectedFile);
+
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressBar.style.width = progress + '%';
+                    },
+                    (error) => {
+                        console.error('Upload error:', error);
+                        alert('Lỗi khi upload file: ' + error.message);
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '📤 Upload tài liệu';
+                        progressContainer.classList.remove('visible');
+                    },
+                    async () => {
+                        // Upload complete
+                        const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+
+                        // Save metadata to Firestore
+                        await firebase.firestore().collection('documents').add({
+                            title,
+                            category,
+                            description,
+                            pages: pages ? parseInt(pages) : null,
+                            author,
+                            fileName: selectedFile.name,
+                            fileType: getFileType(selectedFile.name),
+                            fileSize: selectedFile.size,
+                            downloadURL,
+                            downloadCount: 0,
+                            uploadedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            uploadedBy: firebase.auth().currentUser.email
+                        });
+
+                        alert('Upload thành công!');
+
+                        // Reset form
+                        e.target.reset();
+                        selectedFile = null;
+                        selectedFileDiv.classList.remove('visible');
+                        progressContainer.classList.remove('visible');
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '📤 Upload tài liệu';
+
+                        // Reload documents
+                        loadDocuments();
+                    }
+                );
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Có lỗi xảy ra: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = '📤 Upload tài liệu';
+                progressContainer.classList.remove('visible');
+            }
+        });
+
+        // Load documents
+        let allDocuments = [];
+        let currentFilter = 'all';
+
+        async function loadDocuments() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('doc-table');
+            const noData = document.getElementById('no-data');
+
+            loading.style.display = 'block';
+            table.style.display = 'none';
+            noData.style.display = 'none';
+
+            try {
+                const snapshot = await firebase.firestore()
+                    .collection('documents')
+                    .orderBy('uploadedAt', 'desc')
+                    .get();
+
+                allDocuments = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                updateStats();
+                renderDocuments();
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                loading.style.display = 'none';
+                noData.style.display = 'block';
+            }
+        }
+
+        function updateStats() {
+            const totalDocs = allDocuments.length;
+            const totalDownloads = allDocuments.reduce((sum, doc) => sum + (doc.downloadCount || 0), 0);
+            const avgDownloads = totalDocs > 0 ? Math.round(totalDownloads / totalDocs) : 0;
+            const topDocDownloads = allDocuments.length > 0 ? Math.max(...allDocuments.map(doc => doc.downloadCount || 0)) : 0;
+
+            document.getElementById('total-docs').textContent = totalDocs;
+            document.getElementById('total-downloads').textContent = totalDownloads;
+            document.getElementById('avg-downloads').textContent = avgDownloads;
+            document.getElementById('top-doc-count').textContent = topDocDownloads;
+        }
+
+        function renderDocuments() {
+            const loading = document.getElementById('loading');
+            const table = document.getElementById('doc-table');
+            const tbody = document.getElementById('doc-tbody');
+            const noData = document.getElementById('no-data');
+
+            loading.style.display = 'none';
+
+            const filtered = currentFilter === 'all'
+                ? allDocuments
+                : allDocuments.filter(doc => doc.category === currentFilter);
+
+            if (filtered.length === 0) {
+                table.style.display = 'none';
+                noData.style.display = 'block';
+                return;
+            }
+
+            noData.style.display = 'none';
+            table.style.display = 'table';
+            tbody.innerHTML = '';
+
+            filtered.forEach(doc => {
+                const date = doc.uploadedAt ? new Date(doc.uploadedAt.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+                const downloadCount = doc.downloadCount || 0;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${doc.title}</strong></td>
+                    <td><span class="category-badge">${categoryNames[doc.category]}</span></td>
+                    <td>${doc.fileType}</td>
+                    <td>${formatFileSize(doc.fileSize)}</td>
+                    <td><strong>${downloadCount}</strong></td>
+                    <td>${date}</td>
+                    <td>
+                        <div class="action-btns-small">
+                            <button class="btn-icon btn-view-doc" onclick="window.open('${doc.downloadURL}', '_blank')">👁️ Xem</button>
+                            <button class="btn-icon btn-delete-doc" onclick="deleteDocument('${doc.id}', '${doc.fileName}')">🗑️ Xóa</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Filter
+        document.getElementById('filter-category').addEventListener('change', (e) => {
+            currentFilter = e.target.value;
+            renderDocuments();
+        });
+
+        // Delete document
+        window.deleteDocument = async (docId, fileName) => {
+            if (!confirm('Bạn có chắc muốn xóa tài liệu này?')) return;
+
+            try {
+                // Delete from Storage
+                const storageRef = firebase.storage().ref();
+                await storageRef.child(`documents/${fileName}`).delete();
+
+                // Delete from Firestore
+                await firebase.firestore().collection('documents').doc(docId).delete();
+
+                alert('Đã xóa tài liệu!');
+                loadDocuments();
+            } catch (error) {
+                console.error('Error deleting:', error);
+                alert('Lỗi khi xóa: ' + error.message);
+            }
+        };
+
+        // Initial load
+        loadDocuments();
+    </script>
+</body>
+</html>

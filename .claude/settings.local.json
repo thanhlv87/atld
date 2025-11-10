@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version:*)",
+      "Bash(firebase login:*)",
+      "Bash(npm install:*)",
+      "Bash(firebase --version:*)",
+      "Bash(dir:*)",
+      "Bash(firebase deploy:*)",
+      "Bash(curl:*)",
+      "Bash(\"f:\\Dropbox\\AI\\web_atld\\public\\partner-register.html\")",
+      "Bash(\"f:\\Dropbox\\AI\\web_atld\\public\\partner-login.html\")",
+      "Bash(\"f:\\Dropbox\\AI\\web_atld\\public\\partner-dashboard.html\")",
+      "Bash(\"f:\\Dropbox\\AI\\web_atld\\public\\admin-partners.html\")",
+      "Bash(\"f:\\Dropbox\\AI\\web_atld\\public\\admin-requests.html\")",
+      "Bash(start \"\" \"f:\\Dropbox\\AI\\web_atld\\public\\post-request.html\")",
+      "Bash(firebase ext:list:*)",
+      "Bash(firebase ext:install:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

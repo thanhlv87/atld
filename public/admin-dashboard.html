@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - ATLĐ Connect</title>
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y2NK9VB75H"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-Y2NK9VB75H');
+    </script>
+
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Admin Navigation -->
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <div class="admin-logo">ATLĐ Connect Admin</div>
+            <div class="admin-nav-menu">
+                <a href="admin-dashboard.html" class="active">Dashboard</a>
+                <a href="admin-partners.html">Đối tác</a>
+                <a href="admin-requests.html">Tin đào tạo</a>
+                <a href="admin-documents.html">Tài liệu</a>
+                <button id="logout-btn" class="btn btn-small btn-secondary">Đăng xuất</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Admin Content -->
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Dashboard</h1>
+            <p>Tổng quan về hoạt động nền tảng</p>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-cards">
+            <div class="stat-card">
+                <div class="stat-icon">🏢</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="total-businesses">0</div>
+                    <div class="stat-label">Doanh nghiệp</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🤝</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="total-partners">0</div>
+                    <div class="stat-label">Đối tác</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📋</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="total-requests">0</div>
+                    <div class="stat-label">Yêu cầu đào tạo</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">🔔</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="pending-requests">0</div>
+                    <div class="stat-label">Yêu cầu mới</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Training Requests -->
+        <div class="admin-section">
+            <div class="section-header">
+                <h2>Yêu cầu đào tạo mới nhất</h2>
+                <a href="admin-requests.html" class="btn btn-small btn-primary">Xem tất cả</a>
+            </div>
+
+            <div class="loading-spinner" id="requests-loading">Đang tải...</div>
+
+            <div class="admin-table" id="requests-table" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Công ty</th>
+                            <th>Loại khóa học</th>
+                            <th>Số học viên</th>
+                            <th>Ngày đăng ký</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requests-tbody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="no-data" id="requests-no-data" style="display: none;">
+                Chưa có yêu cầu đào tạo nào
+            </div>
+        </div>
+
+        <!-- Recent Partners -->
+        <div class="admin-section">
+            <div class="section-header">
+                <h2>Đối tác đăng ký gần đây</h2>
+                <a href="admin-partners.html" class="btn btn-small btn-primary">Xem tất cả</a>
+            </div>
+
+            <div class="loading-spinner" id="partners-loading">Đang tải...</div>
+
+            <div class="admin-table" id="partners-table" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tổ chức</th>
+                            <th>Lĩnh vực</th>
+                            <th>Khu vực</th>
+                            <th>Ngày đăng ký</th>
+                            <th>Trạng thái</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody id="partners-tbody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="no-data" id="partners-no-data" style="display: none;">
+                Chưa có đối tác nào đăng ký
+            </div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script src="admin-script.js"></script>
+</body>
+</html>

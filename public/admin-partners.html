@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Đối tác - Admin</title>
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y2NK9VB75H"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-Y2NK9VB75H');
+    </script>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin-styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <style>
+        /* Enhanced tab styling */
+        .tabs {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 0.7rem 1.5rem;
+            border: 2px solid #e0e0e0;
+            background: white;
+            color: #666;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .tab-btn:hover::before {
+            left: 100%;
+        }
+
+        .tab-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,123,255,0.15);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(0,123,255,0.3);
+        }
+
+        .tab-btn.active:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,123,255,0.4);
+        }
+    </style>
+</head>
+<body>
+    <nav class="admin-nav">
+        <div class="admin-nav-container">
+            <div class="admin-logo">ATLĐ Connect Admin</div>
+            <div class="admin-nav-menu">
+                <a href="admin-dashboard.html">Dashboard</a>
+                <a href="admin-partners.html" class="active">Đối tác</a>
+                <a href="admin-requests.html">Tin đào tạo</a>
+                <a href="admin-documents.html">Tài liệu</a>
+                <button id="logout-btn" class="btn btn-small btn-secondary">Đăng xuất</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>Quản lý Đối tác</h1>
+            <p>Phê duyệt và quản lý đối tác đào tạo</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn" onclick="switchTab('pending')">⏳ Chờ duyệt</button>
+            <button class="tab-btn" onclick="switchTab('approved')">✓ Đã duyệt</button>
+            <button class="tab-btn active" onclick="switchTab('all')">📋 Tất cả</button>
+            <button class="tab-btn" onclick="switchTab('emails')">📧 Email Thông báo</button>
+        </div>
+
+        <!-- Partners List View -->
+        <div id="partners-view" class="data-table-container">
+            <div class="loading-spinner" id="loading">Đang tải...</div>
+            <div id="partners-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem;"></div>
+            <div id="no-data" style="display: none;">Không có dữ liệu</div>
+        </div>
+
+        <!-- Email Management View -->
+        <div id="emails-view" style="display: none;">
+            <div style="background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; color: var(--primary-color);">📧 Quản lý Email Nhận Thông báo</h3>
+                <p style="margin-bottom: 1.5rem; color: var(--gray-color);">Danh sách email sẽ nhận thông báo tự động khi có yêu cầu đào tạo mới.</p>
+
+                <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                    <input type="email" id="new-email-input" placeholder="Nhập email mới (VD: partner@example.com)"
+                        style="flex: 1; padding: 0.75rem 1rem; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 0.95rem;"
+                        onkeypress="if(event.key==='Enter') addNotificationEmail()">
+                    <button class="btn btn-primary" onclick="addNotificationEmail()" style="padding: 0.75rem 1.5rem; font-weight: 600; white-space: nowrap;">
+                        ➕ Thêm Email
+                    </button>
+                </div>
+
+                <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; border-left: 4px solid #ffc107; margin-bottom: 2rem;">
+                    <strong>💡 Lưu ý:</strong> Hệ thống sẽ tự động lấy email từ đối tác đã đăng ký. Bạn có thể thêm email thủ công tại đây.
+                </div>
+
+                <div id="loading-emails" class="loading-spinner" style="display: none;">Đang tải...</div>
+                <div id="emails-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for partner details -->
+    <div id="detail-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; padding: 2rem;" onclick="if(event.target === this) closeDetailModal()">
+        <div style="max-width: 700px; margin: 2rem auto; background: white; padding: 2rem; border-radius: 16px; max-height: 85vh; overflow-y: auto; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+            <button onclick="closeDetailModal()" style="position: absolute; top: 1rem; right: 1rem; background: #f0f0f0; border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 1.5rem; line-height: 1; color: #666; transition: all 0.2s;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#f0f0f0'">×</button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        window.FirebaseHelper.onAuthStateChanged((user) => {
+            if (!user) {
+                window.location.href = 'admin-login.html';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            await window.FirebaseHelper.signOutAdmin();
+            window.location.href = 'admin-login.html';
+        });
+
+        let currentTab = 'all';
+        let allPartners = [];
+
+        async function loadPartners() {
+            const loading = document.getElementById('loading');
+            const partnersList = document.getElementById('partners-list');
+            const noData = document.getElementById('no-data');
+
+            loading.style.display = 'block';
+            partnersList.innerHTML = '';
+            noData.style.display = 'none';
+
+            try {
+                const snapshot = await firebase.firestore()
+                    .collection('partners')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                allPartners = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                renderPartners();
+            } catch (error) {
+                console.error('Error loading partners:', error);
+                loading.style.display = 'none';
+                partnersList.innerHTML = `<p style="color: red; grid-column: 1/-1;">Có lỗi xảy ra: ${error.message}</p>`;
+                noData.style.display = 'block';
+            }
+        }
+
+        function renderPartners() {
+            const loading = document.getElementById('loading');
+            const partnersList = document.getElementById('partners-list');
+            const noData = document.getElementById('no-data');
+
+            loading.style.display = 'none';
+
+            let filtered = allPartners;
+            if (currentTab === 'pending') {
+                filtered = allPartners.filter(p => p.status === 'pending');
+            } else if (currentTab === 'approved') {
+                filtered = allPartners.filter(p => p.status === 'approved');
+            }
+
+            if (filtered.length === 0) {
+                partnersList.innerHTML = '';
+                noData.style.display = 'block';
+                return;
+            }
+
+            noData.style.display = 'none';
+            partnersList.innerHTML = '';
+
+            filtered.forEach(partner => {
+                const date = partner.createdAt ? new Date(partner.createdAt.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+
+                // Determine border color based on status
+                let borderColor = '#6c757d'; // gray for rejected/other
+                if (partner.status === 'pending') borderColor = '#ffc107'; // yellow
+                if (partner.status === 'approved' && partner.subscriptionStatus === 'active') borderColor = '#28a745'; // green
+                if (partner.status === 'approved' && partner.subscriptionStatus === 'inactive') borderColor = '#007bff'; // blue
+
+                const card = document.createElement('div');
+                card.className = 'partner-card';
+                card.style.cssText = `background: white; padding: 1.25rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid ${borderColor}; cursor: pointer; transition: all 0.3s; height: fit-content;`;
+                card.onmouseover = () => card.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+                card.onmouseout = () => card.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+
+                card.innerHTML = `
+                    <div style="margin-bottom: 1rem;">
+                        <div style="font-size: 1rem; font-weight: 600; color: var(--dark-color); margin-bottom: 0.5rem;">${partner.companyName}</div>
+                        <div style="font-size: 0.85rem; color: var(--gray-color);">${partner.accountType === 'company' ? '🏢 Doanh nghiệp' : '👤 Cá nhân'} - ${partner.accountType === 'company' ? '999k/năm' : '199k/năm'}</div>
+                    </div>
+
+                    <div style="font-size: 0.9rem; color: var(--gray-color); margin-bottom: 1rem; line-height: 1.6;">
+                        <div style="margin-bottom: 0.4rem;"><strong>${partner.contactName}</strong></div>
+                        <div style="margin-bottom: 0.4rem;">📞 ${partner.phone}</div>
+                        <div style="margin-bottom: 0.4rem;">📧 ${partner.email}</div>
+                        <div style="margin-bottom: 0.4rem;">📅 ${date}</div>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        ${partner.status === 'approved'
+                            ? '<span class="status-badge status-success" style="font-size: 0.75rem;">✓ Đã duyệt</span>'
+                            : partner.status === 'pending'
+                            ? '<span class="status-badge status-warning" style="font-size: 0.75rem;">⏳ Chờ duyệt</span>'
+                            : '<span class="status-badge status-danger" style="font-size: 0.75rem;">✗ Từ chối</span>'}
+
+                        ${partner.subscriptionStatus === 'active'
+                            ? '<span class="status-badge status-success" style="font-size: 0.75rem;">🟢 Active</span>'
+                            : '<span class="status-badge status-danger" style="font-size: 0.75rem;">🔴 Inactive</span>'}
+                    </div>
+
+                    <button class="btn btn-primary" onclick="event.stopPropagation(); viewPartner('${partner.id}')" style="width: 100%; padding: 0.65rem; font-size: 0.9rem; margin-bottom: 0.75rem; font-weight: 600; border-radius: 8px; transition: all 0.2s;">
+                        👁️ Xem chi tiết
+                    </button>
+
+                    <div style="display: grid; grid-template-columns: ${partner.status === 'pending' ? '1fr 1fr' : '1fr'}; gap: 0.5rem;">
+                        ${partner.status === 'pending' ? `
+                            <button class="btn btn-small btn-success" onclick="event.stopPropagation(); approvePartner('${partner.id}')" style="width: 100%; font-size: 0.85rem; padding: 0.55rem; font-weight: 600; border-radius: 6px;">✓ Duyệt</button>
+                            <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); rejectPartner('${partner.id}')" style="width: 100%; font-size: 0.85rem; padding: 0.55rem; font-weight: 600; border-radius: 6px;">✗ Từ chối</button>
+                        ` : partner.status === 'approved' && partner.subscriptionStatus === 'inactive' ? `
+                            <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); activateSubscription('${partner.id}')" style="width: 100%; font-size: 0.85rem; padding: 0.55rem; font-weight: 600; border-radius: 6px;">⚡ Kích hoạt Sub</button>
+                        ` : ''}
+                    </div>
+                `;
+                partnersList.appendChild(card);
+            });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (tab === 'emails') {
+                document.getElementById('partners-view').style.display = 'none';
+                document.getElementById('emails-view').style.display = 'block';
+                loadNotificationEmails();
+            } else {
+                document.getElementById('partners-view').style.display = 'block';
+                document.getElementById('emails-view').style.display = 'none';
+                renderPartners();
+            }
+        }
+
+        // Email Management Functions
+        async function loadNotificationEmails() {
+            const loadingEmails = document.getElementById('loading-emails');
+            const emailsList = document.getElementById('emails-list');
+
+            loadingEmails.style.display = 'block';
+            emailsList.innerHTML = '';
+
+            try {
+                // Get manual emails
+                const manualSnapshot = await firebase.firestore()
+                    .collection('notificationEmails')
+                    .orderBy('createdAt', 'desc')
+                    .get();
+
+                const manualEmails = manualSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                    source: 'manual'
+                }));
+
+                // Get partner emails (approved & active)
+                const partnersSnapshot = await firebase.firestore()
+                    .collection('partners')
+                    .where('status', '==', 'approved')
+                    .where('subscriptionStatus', '==', 'active')
+                    .get();
+
+                const partnerEmails = partnersSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        email: data.email,
+                        companyName: data.companyName,
+                        source: 'partner',
+                        createdAt: data.createdAt
+                    };
+                });
+
+                // Combine and deduplicate
+                const allEmails = [...manualEmails, ...partnerEmails];
+                const uniqueEmails = Array.from(new Map(allEmails.map(e => [e.email, e])).values());
+
+                loadingEmails.style.display = 'none';
+
+                if (uniqueEmails.length === 0) {
+                    emailsList.innerHTML = '<p style="text-align: center; color: var(--gray-color); padding: 2rem;">Chưa có email nào trong danh sách.</p>';
+                    return;
+                }
+
+                emailsList.innerHTML = `
+                    <div style="display: grid; gap: 1rem;">
+                        <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 100px; gap: 1rem; padding: 1rem; background: var(--light-color); border-radius: 8px; font-weight: 600;">
+                            <div>Email</div>
+                            <div>Nguồn</div>
+                            <div>Ngày thêm</div>
+                            <div>Thao tác</div>
+                        </div>
+                        ${uniqueEmails.map(item => {
+                            const date = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+                            const sourceLabel = item.source === 'manual'
+                                ? '✍️ Thủ công'
+                                : `🏢 ${item.companyName || 'Đối tác'}`;
+                            const canDelete = item.source === 'manual';
+
+                            return `
+                                <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 100px; gap: 1rem; padding: 1rem; background: white; border-radius: 8px; align-items: center; border: 1px solid #e0e0e0;">
+                                    <div style="font-weight: 600; color: var(--primary-color);">${item.email}</div>
+                                    <div style="font-size: 0.9rem; color: var(--gray-color);">${sourceLabel}</div>
+                                    <div style="font-size: 0.9rem; color: var(--gray-color);">${date}</div>
+                                    <div>
+                                        ${canDelete
+                                            ? `<button class="btn btn-small btn-danger" onclick="deleteNotificationEmail('${item.id}')" style="padding: 0.4rem 0.8rem; font-size: 0.85rem;">🗑️ Xóa</button>`
+                                            : '<span style="color: var(--gray-color); font-size: 0.85rem;">-</span>'}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #d4edda; border-radius: 8px; border-left: 4px solid #28a745;">
+                        <strong>✓ Tổng cộng:</strong> ${uniqueEmails.length} email sẽ nhận thông báo (${partnerEmails.length} từ đối tác, ${manualEmails.length} thêm thủ công)
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading emails:', error);
+                loadingEmails.style.display = 'none';
+                emailsList.innerHTML = `<p style="color: red; text-align: center; padding: 2rem;">Có lỗi xảy ra: ${error.message}</p>`;
+            }
+        }
+
+        async function addNotificationEmail() {
+            const input = document.getElementById('new-email-input');
+            const email = input.value.trim();
+
+            if (!email) {
+                alert('Vui lòng nhập email!');
+                return;
+            }
+
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('Email không hợp lệ!');
+                return;
+            }
+
+            try {
+                // Check if email already exists
+                const existing = await firebase.firestore()
+                    .collection('notificationEmails')
+                    .where('email', '==', email)
+                    .get();
+
+                if (!existing.empty) {
+                    alert('Email này đã tồn tại trong danh sách!');
+                    return;
+                }
+
+                await firebase.firestore().collection('notificationEmails').add({
+                    email: email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    addedBy: firebase.auth().currentUser.email
+                });
+
+                input.value = '';
+                alert('✓ Đã thêm email thành công!');
+                loadNotificationEmails();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function deleteNotificationEmail(emailId) {
+            if (!confirm('Bạn có chắc muốn xóa email này?')) return;
+
+            try {
+                await firebase.firestore()
+                    .collection('notificationEmails')
+                    .doc(emailId)
+                    .delete();
+
+                alert('✓ Đã xóa email!');
+                loadNotificationEmails();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function approvePartner(partnerId) {
+            if (!confirm('Bạn có chắc muốn duyệt đối tác này?')) return;
+
+            try {
+                await firebase.firestore().collection('partners').doc(partnerId).update({
+                    status: 'approved',
+                    approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('Đã duyệt đối tác! Hãy kích hoạt subscription để họ có thể đăng nhập.');
+                loadPartners();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function rejectPartner(partnerId) {
+            if (!confirm('Bạn có chắc muốn từ chối đối tác này?')) return;
+
+            try {
+                await firebase.firestore().collection('partners').doc(partnerId).update({
+                    status: 'rejected',
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert('Đã từ chối đối tác!');
+                loadPartners();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        async function activateSubscription(partnerId) {
+            const duration = prompt('Kích hoạt bao nhiêu tháng? (VD: 12 cho 1 năm)');
+            if (!duration || isNaN(duration)) return;
+
+            try {
+                const startDate = new Date();
+                const endDate = new Date();
+                endDate.setMonth(endDate.getMonth() + parseInt(duration));
+
+                await firebase.firestore().collection('partners').doc(partnerId).update({
+                    subscriptionStatus: 'active',
+                    subscriptionStartDate: firebase.firestore.Timestamp.fromDate(startDate),
+                    subscriptionEndDate: firebase.firestore.Timestamp.fromDate(endDate),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                alert(`Đã kích hoạt subscription ${duration} tháng!`);
+                loadPartners();
+            } catch (error) {
+                alert('Lỗi: ' + error.message);
+            }
+        }
+
+        function viewPartner(partnerId) {
+            const partner = allPartners.find(p => p.id === partnerId);
+            if (!partner) return;
+
+            const date = partner.createdAt ? new Date(partner.createdAt.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+            const approvedDate = partner.approvedAt ? new Date(partner.approvedAt.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+            const subStart = partner.subscriptionStartDate ? new Date(partner.subscriptionStartDate.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+            const subEnd = partner.subscriptionEndDate ? new Date(partner.subscriptionEndDate.toDate()).toLocaleDateString('vi-VN') : 'N/A';
+
+            document.getElementById('modal-content').innerHTML = `
+                <h2 style="color: var(--primary-color); margin-bottom: 1.5rem;">Chi tiết Đối tác</h2>
+
+                <div style="background: var(--light-color); padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">🏢 Thông tin công ty</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div><strong>Công ty:</strong> ${partner.companyName}</div>
+                        <div><strong>Loại hình:</strong> ${partner.accountType === 'company' ? 'Doanh nghiệp' : 'Cá nhân'}</div>
+                        <div><strong>Gói:</strong> ${partner.accountType === 'company' ? '999k/năm' : '199k/năm'}</div>
+                        <div><strong>Xuất HĐ:</strong> ${partner.hasInvoice ? 'Có' : 'Không'}</div>
+                        ${partner.taxCode ? `<div><strong>MST:</strong> ${partner.taxCode}</div>` : ''}
+                        <div><strong>Địa chỉ:</strong> ${partner.address}</div>
+                    </div>
+                </div>
+
+                <div style="background: #d4edda; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #28a745; margin-bottom: 1.5rem;">
+                    <h3 style="color: #155724; margin-bottom: 1rem;">👤 Thông tin liên hệ</h3>
+                    <div style="font-size: 1.05rem;">
+                        <p style="margin-bottom: 0.75rem;"><strong>Người liên hệ:</strong> ${partner.contactName}</p>
+                        <p style="margin-bottom: 0.75rem;"><strong>Số điện thoại:</strong> <a href="tel:${partner.phone}" style="color: #007bff; font-weight: 600;">${partner.phone}</a></p>
+                        <p><strong>Email:</strong> <a href="mailto:${partner.email}" style="color: #007bff;">${partner.email}</a></p>
+                    </div>
+                </div>
+
+                <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">📋 Lĩnh vực & Khu vực</h3>
+                    <div>
+                        <p style="margin-bottom: 0.75rem;"><strong>Lĩnh vực:</strong> ${partner.specialties ? partner.specialties.join(', ') : 'N/A'}</p>
+                        <p><strong>Khu vực phục vụ:</strong> ${partner.serviceAreas ? (partner.serviceAreas.includes('all') ? 'Toàn quốc' : partner.serviceAreas.join(', ')) : 'N/A'}</p>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem;">📊 Trạng thái</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <strong>Trạng thái:</strong><br>
+                            ${partner.status === 'approved'
+                                ? '<span class="status-badge status-success">✓ Đã duyệt</span>'
+                                : partner.status === 'pending'
+                                ? '<span class="status-badge status-warning">⏳ Chờ duyệt</span>'
+                                : '<span class="status-badge status-danger">✗ Từ chối</span>'}
+                        </div>
+                        <div>
+                            <strong>Subscription:</strong><br>
+                            ${partner.subscriptionStatus === 'active'
+                                ? '<span class="status-badge status-success">🟢 Active</span>'
+                                : '<span class="status-badge status-danger">🔴 Inactive</span>'}
+                        </div>
+                        <div><strong>Ngày đăng ký:</strong> ${date}</div>
+                        <div><strong>Ngày duyệt:</strong> ${approvedDate}</div>
+                        ${partner.subscriptionStatus === 'active' ? `
+                            <div><strong>Bắt đầu:</strong> ${subStart}</div>
+                            <div><strong>Kết thúc:</strong> ${subEnd}</div>
+                        ` : ''}
+                        <div><strong>Tổng lượt xem:</strong> ${partner.totalViews || 0}</div>
+                        <div><strong>Tổng liên hệ:</strong> ${partner.totalContacts || 0}</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                    ${partner.status === 'pending' ? `
+                        <button class="btn btn-success" onclick="closeDetailModal(); approvePartner('${partner.id}')" style="padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 8px;">✓ Duyệt đối tác</button>
+                        <button class="btn btn-danger" onclick="closeDetailModal(); rejectPartner('${partner.id}')" style="padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 8px;">✗ Từ chối</button>
+                    ` : partner.status === 'approved' && partner.subscriptionStatus === 'inactive' ? `
+                        <button class="btn btn-primary" onclick="closeDetailModal(); activateSubscription('${partner.id}')" style="padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 8px;">⚡ Kích hoạt Subscription</button>
+                    ` : ''}
+                    <button class="btn btn-secondary" onclick="closeDetailModal()" style="padding: 0.75rem 1.5rem; font-weight: 600; border-radius: 8px;">✕ Đóng</button>
+                </div>
+            `;
+            document.getElementById('detail-modal').style.display = 'block';
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').style.display = 'none';
+        }
+
+        loadPartners();
+    </script>
+</body>
+</html>

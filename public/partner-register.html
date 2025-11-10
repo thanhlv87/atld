@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng ký Đối tác Đào tạo | Trở thành đối tác ATLĐ | ATLĐ Connect</title>
+    <meta name="description" content="Đăng ký trở thành đối tác đào tạo an toàn lao động tại ATLĐ Connect. Mở rộng cơ hội kinh doanh và kết nối với doanh nghiệp cần đào tạo.">
+    <meta name="keywords" content="đăng ký đối tác, đối tác đào tạo, trở thành đối tác, đào tạo an toàn lao động, chương trình đào tạo, atlđ">
+    <meta name="robots" content="index, follow">
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y2NK9VB75H"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-Y2NK9VB75H');
+    </script>
+
+    <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="canonical" href="https://atld.web.app/partner-register">
+    <noscript><link rel="stylesheet" href="styles.css"></noscript>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+    <style>
+        .register-hero {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+            padding: 5rem 1rem;
+        }
+
+        .register-hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .register-container {
+            max-width: 800px;
+            margin: -2rem auto 2rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .pricing-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .pricing-card {
+            border: 3px solid var(--gray-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .pricing-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow);
+        }
+
+        .pricing-card.selected {
+            border-color: var(--primary-color);
+            background: var(--light-color);
+        }
+
+        .pricing-card .price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 1rem 0;
+        }
+
+        .pricing-card .period {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+        .pricing-card ul {
+            text-align: left;
+            margin-top: 1rem;
+            list-style: none;
+        }
+
+        .pricing-card ul li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--gray-light);
+        }
+
+        .pricing-card ul li:before {
+            content: '✓ ';
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        .form-section-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin: 1.5rem 0 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .form-section-title:first-of-type {
+            margin-top: 0;
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        .checkbox-grid label {
+            display: flex;
+            align-items: center;
+            padding: 0.6rem 0.75rem;
+            background: var(--light-color);
+            border: 2px solid var(--gray-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+
+        .checkbox-grid label:hover {
+            border-color: var(--primary-color);
+            background: white;
+        }
+
+        .checkbox-grid input[type="checkbox"] {
+            margin-right: 0.5rem;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-grid input[type="checkbox"]:checked + span {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .service-all-option {
+            margin-bottom: 0.75rem;
+        }
+
+        .service-all-option label {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .service-all-option input[type="checkbox"] {
+            margin-right: 0.75rem;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .success-message {
+            background: #D4EDDA;
+            border: 2px solid #28A745;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            display: none;
+        }
+
+        .success-message.visible {
+            display: block;
+        }
+
+        .success-message h2 {
+            color: #155724;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo">ATLĐ Connect</div>
+            <ul class="nav-menu">
+                <li><a href="index.html">Trang chủ</a></li>
+                <li><a href="courses.html">Khóa học</a></li>
+                <li><a href="documents.html">Tài liệu</a></li>
+                <li><a href="post-request.html" class="btn-nav">Đăng ký đào tạo</a></li>
+                <li><a href="partner-login.html" class="nav-cta">Đăng nhập</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="register-hero">
+        <h1>Đăng ký Đối tác Đào tạo</h1>
+        <p>Gia nhập mạng lưới đào tạo An toàn Lao động hàng đầu Việt Nam</p>
+    </section>
+
+    <!-- Register Container -->
+    <div class="register-container">
+        <!-- Pricing Plans -->
+        <h2 class="form-section-title">Chọn gói đăng ký</h2>
+        <div class="pricing-cards">
+            <div class="pricing-card" id="plan-individual" onclick="selectPlan('individual')">
+                <h3>Cá nhân</h3>
+                <div class="price">199k</div>
+                <div class="period">/ năm</div>
+                <ul>
+                    <li>Không xuất hóa đơn</li>
+                    <li>Xem tất cả nhu cầu</li>
+                    <li>Thống kê chi tiết</li>
+                    <li>Email thông báo</li>
+                </ul>
+            </div>
+            <div class="pricing-card" id="plan-company" onclick="selectPlan('company')">
+                <h3>Doanh nghiệp</h3>
+                <div class="price">999k</div>
+                <div class="period">/ năm</div>
+                <ul>
+                    <li>Có xuất hóa đơn</li>
+                    <li>Xem tất cả nhu cầu</li>
+                    <li>Thống kê chi tiết</li>
+                    <li>Email thông báo</li>
+                    <li>Hỗ trợ ưu tiên</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Registration Form -->
+        <form id="register-form">
+            <input type="hidden" id="account-type" value="">
+
+            <h2 class="form-section-title">Thông tin đối tác</h2>
+
+            <div class="form-group">
+                <label for="company-name">Tên công ty / Cá nhân <span class="required">*</span></label>
+                <input type="text" id="company-name" required placeholder="Công ty TNHH ABC hoặc Nguyễn Văn A">
+            </div>
+
+            <div class="form-group">
+                <label for="contact-name">Người liên hệ <span class="required">*</span></label>
+                <input type="text" id="contact-name" required placeholder="Nguyễn Văn B">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="phone">Số điện thoại <span class="required">*</span></label>
+                    <input type="tel" id="phone" required placeholder="0901234567" pattern="[0-9]{10}">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email <span class="required">*</span></label>
+                    <input type="email" id="email" required placeholder="contact@company.com">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mật khẩu <span class="required">*</span></label>
+                <input type="password" id="password" required placeholder="Tối thiểu 6 ký tự" minlength="6">
+                <small>Mật khẩu này sẽ dùng để đăng nhập vào hệ thống</small>
+            </div>
+
+            <div class="form-group">
+                <label for="address">Địa chỉ <span class="required">*</span></label>
+                <input type="text" id="address" required placeholder="123 Đường ABC, Quận 1, TP.HCM">
+            </div>
+
+            <div class="form-group">
+                <label for="tax-code">Mã số thuế</label>
+                <input type="text" id="tax-code" placeholder="0123456789 (Chỉ dành cho doanh nghiệp)">
+            </div>
+
+            <h2 class="form-section-title">Chuyên môn & Dịch vụ</h2>
+
+            <div class="form-group">
+                <label>Lĩnh vực đào tạo <span class="required">*</span></label>
+                <div class="checkbox-grid">
+                    <label><input type="checkbox" name="specialty" value="general"><span>An toàn chung</span></label>
+                    <label><input type="checkbox" name="specialty" value="electrical"><span>An toàn điện</span></label>
+                    <label><input type="checkbox" name="specialty" value="construction"><span>Xây dựng</span></label>
+                    <label><input type="checkbox" name="specialty" value="fire"><span>PCCC</span></label>
+                    <label><input type="checkbox" name="specialty" value="chemical"><span>Hóa chất</span></label>
+                    <label><input type="checkbox" name="specialty" value="manufacturing"><span>Sản xuất</span></label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Khu vực phục vụ <span class="required">*</span></label>
+                <div class="service-all-option">
+                    <label><input type="checkbox" id="service-all" onchange="toggleServiceAll()"><span>🌏 Toàn quốc</span></label>
+                </div>
+                <div id="service-areas" class="checkbox-grid">
+                    <label><input type="checkbox" name="service-area" value="TP. Hồ Chí Minh"><span>TP. Hồ Chí Minh</span></label>
+                    <label><input type="checkbox" name="service-area" value="Hà Nội"><span>Hà Nội</span></label>
+                    <label><input type="checkbox" name="service-area" value="Đà Nẵng"><span>Đà Nẵng</span></label>
+                    <label><input type="checkbox" name="service-area" value="Bình Dương"><span>Bình Dương</span></label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-grid">
+                    <label style="background: var(--light-color); border: 2px solid var(--gray-light);">
+                        <input type="checkbox" id="email-notifications" checked>
+                        <span>Nhận thông báo email khi có nhu cầu đào tạo mới</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-large" id="submit-btn">
+                    Đăng ký ngay
+                </button>
+            </div>
+
+            <p style="text-align: center; margin-top: 1rem;">
+                Đã có tài khoản? <a href="partner-login.html">Đăng nhập tại đây</a>
+            </p>
+        </form>
+
+        <!-- Success Message -->
+        <div class="success-message" id="success-message">
+            <h2>Đăng ký thành công!</h2>
+            <p>Tài khoản của bạn đang chờ Admin phê duyệt.</p>
+            <p>Bạn sẽ nhận email thông báo khi tài khoản được kích hoạt.</p>
+            <br>
+            <p><strong>Thông tin thanh toán:</strong></p>
+            <p id="payment-info"></p>
+            <br>
+            <a href="partner-login.html" class="btn btn-primary">Đến trang đăng nhập</a>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 ATLĐ Connect. Kết nối đào tạo An toàn Lao động.</p>
+        </div>
+    </footer>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        let selectedPlan = '';
+
+        function selectPlan(plan) {
+            selectedPlan = plan;
+            document.getElementById('account-type').value = plan;
+
+            // Update UI
+            document.getElementById('plan-individual').classList.remove('selected');
+            document.getElementById('plan-company').classList.remove('selected');
+            document.getElementById('plan-' + plan).classList.add('selected');
+        }
+
+        function toggleServiceAll() {
+            const serviceAll = document.getElementById('service-all');
+            const serviceAreas = document.querySelectorAll('input[name="service-area"]');
+
+            if (serviceAll.checked) {
+                serviceAreas.forEach(cb => {
+                    cb.checked = false;
+                    cb.disabled = true;
+                });
+            } else {
+                serviceAreas.forEach(cb => {
+                    cb.disabled = false;
+                });
+            }
+        }
+
+        // Form submission
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!selectedPlan) {
+                alert('Vui lòng chọn gói đăng ký!');
+                return;
+            }
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Đang xử lý...';
+
+            // Get specialties
+            const specialties = [];
+            document.querySelectorAll('input[name="specialty"]:checked').forEach(cb => {
+                specialties.push(cb.value);
+            });
+
+            if (specialties.length === 0) {
+                alert('Vui lòng chọn ít nhất 1 lĩnh vực đào tạo!');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Đăng ký ngay';
+                return;
+            }
+
+            // Get service areas
+            const serviceAreas = [];
+            if (document.getElementById('service-all').checked) {
+                serviceAreas.push('all');
+            } else {
+                document.querySelectorAll('input[name="service-area"]:checked').forEach(cb => {
+                    serviceAreas.push(cb.value);
+                });
+            }
+
+            if (serviceAreas.length === 0) {
+                alert('Vui lòng chọn khu vực phục vụ!');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Đăng ký ngay';
+                return;
+            }
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const companyName = document.getElementById('company-name').value;
+
+            try {
+                // Create Firebase Auth account
+                const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+                const user = userCredential.user;
+
+                // Update display name
+                await user.updateProfile({
+                    displayName: companyName
+                });
+
+                // Save partner data to Firestore
+                const partnerData = {
+                    uid: user.uid,
+                    companyName: companyName,
+                    contactName: document.getElementById('contact-name').value,
+                    phone: document.getElementById('phone').value,
+                    email: email,
+                    address: document.getElementById('address').value,
+                    taxCode: document.getElementById('tax-code').value || '',
+
+                    accountType: selectedPlan,
+                    hasInvoice: selectedPlan === 'company',
+
+                    specialties: specialties,
+                    serviceAreas: serviceAreas,
+
+                    status: 'pending',
+                    approvedAt: null,
+
+                    subscriptionStatus: 'inactive',
+                    subscriptionType: selectedPlan,
+                    subscriptionStartDate: null,
+                    subscriptionEndDate: null,
+
+                    emailNotifications: document.getElementById('email-notifications').checked,
+
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+
+                    totalViews: 0,
+                    totalContacts: 0
+                };
+
+                await firebase.firestore().collection('partners').doc(user.uid).set(partnerData);
+
+                // Show success message
+                document.getElementById('register-form').style.display = 'none';
+                document.querySelector('.pricing-cards').style.display = 'none';
+                document.querySelector('.form-section-title').style.display = 'none';
+
+                const paymentInfo = selectedPlan === 'company'
+                    ? 'Gói Doanh nghiệp: 999,000 VNĐ/năm (có xuất hóa đơn)'
+                    : 'Gói Cá nhân: 199,000 VNĐ/năm (không xuất hóa đơn)';
+
+                document.getElementById('payment-info').textContent = paymentInfo;
+                document.getElementById('success-message').classList.add('visible');
+
+                // Sign out user (they need admin approval first)
+                await firebase.auth().signOut();
+
+            } catch (error) {
+                console.error('Error registering partner:', error);
+                let errorMsg = 'Có lỗi xảy ra: ' + error.message;
+
+                if (error.code === 'auth/email-already-in-use') {
+                    errorMsg = 'Email này đã được đăng ký. Vui lòng đăng nhập hoặc sử dụng email khác.';
+                }
+
+                alert(errorMsg);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Đăng ký ngay';
+            }
+        });
+    </script>
+</body>
+</html>
