@@ -24,7 +24,8 @@
       "Bash(git push:*)",
       "Bash(git pull:*)",
       "Bash(firebase ext:info:*)",
-      "Bash(start \"\" \"https://console.firebase.google.com/project/gen-lang-client-0113063590/extensions/instances/firestore-send-email-idul?tab=config\")"
+      "Bash(start \"\" \"https://console.firebase.google.com/project/gen-lang-client-0113063590/extensions/instances/firestore-send-email-idul?tab=config\")",
+      "Bash(start \"\" \"https://atld.web.app/test-email.html\")"
     ],
     "deny": [],
     "ask": []

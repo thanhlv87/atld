@@ -68,6 +68,21 @@ service cloud.firestore {
                       // Admin can update all, anyone can update downloadCount
     }
 
+    // Notification Emails - admin can manage, system can read
+    match /notificationEmails/{emailId} {
+      allow read: if isAdmin();  // Admin can read all
+      allow create, delete: if isAdmin();  // Only admin can add/remove emails
+      allow update: if isAdmin();
+    }
+
+    // Mail Queue - for Firebase Extension Trigger Email
+    match /mail/{mailId} {
+      allow create: if true;  // Anyone can create email (for auto notifications)
+      allow read: if isAdmin();  // Only admin can read mail queue
+      allow update: if true;  // Extension needs to update delivery status
+      allow delete: if isAdmin();  // Only admin can delete
+    }
+
     // Legacy collections for backward compatibility
     match /training_requests_old/{requestId} {
       allow read, write: if isAdmin();
