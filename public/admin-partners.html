@@ -145,8 +145,8 @@
         </div>
     </div>
 
-    <script src="firebase-config.js"></script>
-    <script>
+    <script src="firebase-config.js" defer></script>
+    <script defer>
         window.FirebaseHelper.onAuthStateChanged((user) => {
             if (!user) {
                 window.location.href = 'admin-login.html';
