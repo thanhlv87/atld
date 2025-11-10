@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Email - ATLĐ Connect</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .test-container {
+            max-width: 800px;
+            margin: 4rem auto;
+            padding: 2rem;
+        }
+        .test-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        .result-box {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            margin-top: 1rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .success-box {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .error-box {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="test-container">
+        <h1 style="color: var(--primary-color); margin-bottom: 1rem;">🧪 Test Email Notification</h1>
+        <p style="color: var(--gray-color); margin-bottom: 2rem;">Trang này dùng để test tính năng gửi email thông báo</p>
+
+        <!-- Test 1: Simple Email -->
+        <div class="test-card">
+            <h2>📧 Test 1: Gửi Email Đơn Giản</h2>
+            <p style="color: var(--gray-color); margin-bottom: 1rem;">
+                Gửi một email test đơn giản để kiểm tra Firebase Extension hoạt động
+            </p>
+
+            <div class="form-group">
+                <label class="form-label">Email nhận test:</label>
+                <input type="email" id="test1-email" class="form-control"
+                    value="vietthanh228@gmail.com"
+                    placeholder="email@example.com">
+            </div>
+
+            <button class="btn btn-primary" onclick="testSimpleEmail()">
+                📨 Gửi Email Test
+            </button>
+
+            <div id="test1-result"></div>
+        </div>
+
+        <!-- Test 2: Training Request Email -->
+        <div class="test-card">
+            <h2>🎓 Test 2: Gửi Email Yêu Cầu Đào Tạo</h2>
+            <p style="color: var(--gray-color); margin-bottom: 1rem;">
+                Gửi email với template đầy đủ như khi có yêu cầu đào tạo mới
+            </p>
+
+            <div class="form-group">
+                <label class="form-label">Email nhận test:</label>
+                <input type="email" id="test2-email" class="form-control"
+                    value="vietthanh228@gmail.com"
+                    placeholder="email@example.com">
+            </div>
+
+            <button class="btn btn-primary" onclick="testTrainingRequestEmail()">
+                📨 Gửi Email Template Đầy Đủ
+            </button>
+
+            <div id="test2-result"></div>
+        </div>
+
+        <!-- Test 3: Get All Notification Emails -->
+        <div class="test-card">
+            <h2>📋 Test 3: Kiểm Tra Danh Sách Email</h2>
+            <p style="color: var(--gray-color); margin-bottom: 1rem;">
+                Xem tất cả email sẽ nhận thông báo (từ partners + manual)
+            </p>
+
+            <button class="btn btn-secondary" onclick="testGetAllEmails()">
+                📊 Xem Danh Sách Email
+            </button>
+
+            <div id="test3-result"></div>
+        </div>
+
+        <!-- Test 4: Check Mail Collection -->
+        <div class="test-card">
+            <h2>🔍 Test 4: Kiểm Tra Collection Mail</h2>
+            <p style="color: var(--gray-color); margin-bottom: 1rem;">
+                Xem các email đã được gửi (hoặc đang chờ gửi) trong collection 'mail'
+            </p>
+
+            <button class="btn btn-secondary" onclick="testCheckMailCollection()">
+                🗂️ Xem Mail Queue
+            </button>
+
+            <div id="test4-result"></div>
+        </div>
+
+        <div style="background: #fff3cd; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #ffc107;">
+            <h3>💡 Lưu ý:</h3>
+            <ul style="margin: 0.5rem 0 0 1.5rem; line-height: 1.8;">
+                <li>Email sẽ được gửi sau 10-30 giây</li>
+                <li>Kiểm tra cả thư mục Spam nếu không thấy email</li>
+                <li>Xem logs tại: <a href="https://console.firebase.google.com/project/gen-lang-client-0113063590/extensions/instances/firestore-send-email-idul" target="_blank">Extension Logs</a></li>
+                <li>Extension phải được cấu hình đúng SMTP password</li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 2rem; text-align: center;">
+            <a href="admin-partners.html" class="btn btn-secondary">← Quay lại Admin</a>
+            <a href="post-request.html" class="btn btn-primary" style="margin-left: 1rem;">Đến Trang Đăng Tin →</a>
+        </div>
+    </div>
+
+    <script src="firebase-config.js"></script>
+    <script>
+        // Test 1: Simple Email
+        async function testSimpleEmail() {
+            const email = document.getElementById('test1-email').value.trim();
+            const resultDiv = document.getElementById('test1-result');
+
+            if (!email) {
+                alert('Vui lòng nhập email!');
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="result-box">⏳ Đang gửi email...</div>';
+
+            try {
+                const docRef = await firebase.firestore().collection('mail').add({
+                    to: [email],
+                    message: {
+                        subject: '🧪 Test Email - ATLĐ Connect',
+                        html: `
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <meta charset="UTF-8">
+                            </head>
+                            <body style="font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5;">
+                                <div style="max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
+                                    <h1 style="color: #dc2626;">🧪 Test Email Thành Công!</h1>
+                                    <p>Chào bạn,</p>
+                                    <p>Đây là email test từ hệ thống <strong>ATLĐ Connect</strong>.</p>
+                                    <p>Nếu bạn nhận được email này, nghĩa là Firebase Extension <strong>Trigger Email</strong> đã hoạt động bình thường!</p>
+                                    <hr style="margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;">
+                                    <p style="font-size: 12px; color: #666;">
+                                        Email được gửi lúc: ${new Date().toLocaleString('vi-VN')}<br>
+                                        Từ: ATLĐ Connect System
+                                    </p>
+                                </div>
+                            </body>
+                            </html>
+                        `
+                    },
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                resultDiv.innerHTML = `
+                    <div class="result-box success-box">
+                        ✅ <strong>Thành công!</strong><br><br>
+                        Document ID: ${docRef.id}<br>
+                        Email sẽ được gửi đến: ${email}<br>
+                        Thời gian: ${new Date().toLocaleString('vi-VN')}<br><br>
+                        ⏳ Đợi 10-30 giây rồi kiểm tra inbox/spam của bạn
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result-box error-box">
+                        ❌ <strong>Lỗi!</strong><br><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Test 2: Training Request Email
+        async function testTrainingRequestEmail() {
+            const email = document.getElementById('test2-email').value.trim();
+            const resultDiv = document.getElementById('test2-result');
+
+            if (!email) {
+                alert('Vui lòng nhập email!');
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="result-box">⏳ Đang gửi email...</div>';
+
+            const mockRequestData = {
+                topic: 'fire',
+                topicOther: '',
+                numTrainees: '50',
+                province: 'TP. Hồ Chí Minh',
+                district: 'Quận 1',
+                deliveryType: 'onsite',
+                timeframe: 'Trong 1 tháng',
+                budget: '20-30 triệu',
+                description: 'Cần đào tạo phòng cháy chữa cháy cho 50 nhân viên văn phòng'
+            };
+
+            const requestCode = 'TEST' + Date.now();
+            const topicNames = {
+                'fire': 'Phòng cháy chữa cháy',
+                'general': 'An toàn lao động chung',
+                'electrical': 'An toàn điện',
+                'construction': 'An toàn xây dựng'
+            };
+
+            try {
+                const docRef = await firebase.firestore().collection('mail').add({
+                    to: [email],
+                    message: {
+                        subject: `🔔 [TEST] Yêu cầu đào tạo mới - ${topicNames[mockRequestData.topic]}`,
+                        html: `
+                            <!DOCTYPE html>
+                            <html>
+                            <head>
+                                <meta charset="UTF-8">
+                                <style>
+                                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                                    .header { background: linear-gradient(135deg, #dc2626, #991b1b); color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+                                    .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
+                                    .info-row { margin: 10px 0; padding: 10px; background: white; border-left: 4px solid #dc2626; }
+                                    .label { font-weight: bold; color: #dc2626; }
+                                    .cta-button { display: inline-block; padding: 12px 24px; background: #dc2626; color: white; text-decoration: none; border-radius: 6px; margin: 20px 0; }
+                                    .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+                                    .test-banner { background: #ffc107; color: #000; padding: 10px; text-align: center; font-weight: bold; }
+                                </style>
+                            </head>
+                            <body>
+                                <div class="container">
+                                    <div class="test-banner">
+                                        🧪 ĐÂY LÀ EMAIL TEST - KHÔNG PHẢI YÊU CẦU THẬT
+                                    </div>
+                                    <div class="header">
+                                        <h1 style="margin: 0;">🔔 YÊU CẦU ĐÀO TẠO MỚI</h1>
+                                        <p style="margin: 10px 0 0 0;">ATLĐ Connect</p>
+                                    </div>
+                                    <div class="content">
+                                        <p>Xin chào Đối tác,</p>
+                                        <p>Có một yêu cầu đào tạo mới phù hợp với lĩnh vực của bạn:</p>
+
+                                        <div class="info-row">
+                                            <span class="label">📝 Mã yêu cầu:</span> ${requestCode}
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="label">📚 Chủ đề:</span> ${topicNames[mockRequestData.topic]}
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="label">👥 Số học viên:</span> ${mockRequestData.numTrainees} người
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="label">📍 Địa điểm:</span> ${mockRequestData.province}, ${mockRequestData.district}
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="label">🎓 Hình thức:</span> Trực tiếp tại địa điểm
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="label">⏰ Thời gian:</span> ${mockRequestData.timeframe}
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="label">💰 Ngân sách:</span> ${mockRequestData.budget}
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="label">📋 Mô tả:</span><br>
+                                            ${mockRequestData.description}
+                                        </div>
+
+                                        <div style="text-align: center;">
+                                            <a href="https://atld.web.app/requests-dashboard.html" class="cta-button">
+                                                👁️ Xem chi tiết và Liên hệ
+                                            </a>
+                                        </div>
+
+                                        <p style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                                            <strong>💡 Lưu ý:</strong> Đây là cơ hội kết nối với khách hàng tiềm năng.
+                                            Hãy truy cập Dashboard để xem thông tin liên hệ và gửi báo giá!
+                                        </p>
+                                    </div>
+                                    <div class="footer">
+                                        <p>Email này được gửi tự động từ hệ thống ATLĐ Connect</p>
+                                        <p>© 2025 ATLĐ Connect. All rights reserved.</p>
+                                        <p>
+                                            <a href="https://atld.web.app" style="color: #dc2626;">atld.web.app</a> |
+                                            <a href="mailto:vietthanh228@gmail.com" style="color: #dc2626;">vietthanh228@gmail.com</a>
+                                        </p>
+                                    </div>
+                                </div>
+                            </body>
+                            </html>
+                        `
+                    },
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    requestCode: requestCode
+                });
+
+                resultDiv.innerHTML = `
+                    <div class="result-box success-box">
+                        ✅ <strong>Thành công!</strong><br><br>
+                        Document ID: ${docRef.id}<br>
+                        Request Code: ${requestCode}<br>
+                        Email sẽ được gửi đến: ${email}<br>
+                        Thời gian: ${new Date().toLocaleString('vi-VN')}<br><br>
+                        ⏳ Đợi 10-30 giây rồi kiểm tra inbox/spam của bạn<br>
+                        📧 Email sẽ có đầy đủ template như yêu cầu đào tạo thật
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result-box error-box">
+                        ❌ <strong>Lỗi!</strong><br><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Test 3: Get All Emails
+        async function testGetAllEmails() {
+            const resultDiv = document.getElementById('test3-result');
+            resultDiv.innerHTML = '<div class="result-box">⏳ Đang tải danh sách...</div>';
+
+            try {
+                // Get manual emails
+                const manualSnapshot = await firebase.firestore()
+                    .collection('notificationEmails')
+                    .get();
+
+                const manualEmails = manualSnapshot.docs.map(doc => doc.data().email);
+
+                // Get partner emails
+                const partnersSnapshot = await firebase.firestore()
+                    .collection('partners')
+                    .where('status', '==', 'approved')
+                    .where('subscriptionStatus', '==', 'active')
+                    .get();
+
+                const partnerEmails = partnersSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return `${data.email} (${data.companyName})`;
+                });
+
+                // Combine
+                const allEmails = [...new Set([...manualEmails, ...partnerEmails.map(e => e.split(' ')[0])])];
+
+                resultDiv.innerHTML = `
+                    <div class="result-box success-box">
+                        <strong>📧 Tổng số email: ${allEmails.length}</strong><br><br>
+
+                        <strong>✍️ Email thủ công (${manualEmails.length}):</strong><br>
+                        ${manualEmails.length > 0 ? manualEmails.join('<br>') : '<em>Chưa có</em>'}<br><br>
+
+                        <strong>🏢 Email từ đối tác (${partnerEmails.length}):</strong><br>
+                        ${partnerEmails.length > 0 ? partnerEmails.join('<br>') : '<em>Chưa có đối tác active</em>'}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result-box error-box">
+                        ❌ <strong>Lỗi!</strong><br><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Test 4: Check Mail Collection
+        async function testCheckMailCollection() {
+            const resultDiv = document.getElementById('test4-result');
+            resultDiv.innerHTML = '<div class="result-box">⏳ Đang kiểm tra...</div>';
+
+            try {
+                const snapshot = await firebase.firestore()
+                    .collection('mail')
+                    .orderBy('createdAt', 'desc')
+                    .limit(10)
+                    .get();
+
+                if (snapshot.empty) {
+                    resultDiv.innerHTML = `
+                        <div class="result-box">
+                            ℹ️ <strong>Chưa có email nào trong queue</strong><br><br>
+                            Collection 'mail' đang trống. Hãy thử gửi email test ở trên!
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = '<div class="result-box success-box">';
+                html += `<strong>📧 ${snapshot.size} email gần nhất:</strong><br><br>`;
+
+                snapshot.docs.forEach((doc, index) => {
+                    const data = doc.data();
+                    const time = data.createdAt ? new Date(data.createdAt.toDate()).toLocaleString('vi-VN') : 'N/A';
+                    const deliveryState = data.delivery?.state || 'PENDING';
+                    const deliveryError = data.delivery?.error || '';
+
+                    html += `<strong>${index + 1}. Document ID:</strong> ${doc.id}<br>`;
+                    html += `   <strong>To:</strong> ${Array.isArray(data.to) ? data.to.join(', ') : data.to}<br>`;
+                    html += `   <strong>Subject:</strong> ${data.message?.subject || 'N/A'}<br>`;
+                    html += `   <strong>Status:</strong> ${deliveryState}<br>`;
+                    if (deliveryError) html += `   <strong>Error:</strong> ${deliveryError}<br>`;
+                    html += `   <strong>Created:</strong> ${time}<br><br>`;
+                });
+
+                html += '</div>';
+                resultDiv.innerHTML = html;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result-box error-box">
+                        ❌ <strong>Lỗi!</strong><br><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
