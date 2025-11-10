@@ -364,21 +364,27 @@
             emptyState.style.display = 'none';
 
             try {
+                console.log('🔍 Loading training requests...');
                 const snapshot = await firebase.firestore()
                     .collection('training_requests')
                     .orderBy('createdAt', 'desc')
                     .get();
+
+                console.log('✅ Loaded', snapshot.size, 'requests');
 
                 allRequests = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
 
+                console.log('📋 All requests:', allRequests);
                 renderRequests();
             } catch (error) {
-                console.error('Error loading requests:', error);
+                console.error('❌ Error loading requests:', error);
                 loading.style.display = 'none';
                 emptyState.style.display = 'block';
+                // Show error message to user
+                requestsList.innerHTML = `<div style="background: #f8d7da; color: #721c24; padding: 1rem; border-radius: 8px;">Lỗi: ${error.message}</div>`;
             }
         }
 

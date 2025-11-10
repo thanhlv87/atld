@@ -16,9 +16,9 @@
 
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="admin-styles.css">
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js" defer></script>
 </head>
 <body>
     <!-- Navigation -->
@@ -165,19 +165,21 @@
             requestsList.innerHTML = '';
 
             try {
-                console.log('Loading training requests...');
+                console.log('🔍 Loading training requests for partner...');
                 const snapshot = await firebase.firestore()
                     .collection('training_requests')
                     .where('status', '==', 'open')
                     .orderBy('createdAt', 'desc')
                     .get();
 
-                console.log('Loaded requests:', snapshot.size);
+                console.log('✅ Loaded', snapshot.size, 'open requests');
 
                 const requests = snapshot.docs.map(doc => ({
                     id: doc.id,
                     ...doc.data()
                 }));
+
+                console.log('📋 Requests data:', requests);
 
                 document.getElementById('total-requests').textContent = requests.length;
 
