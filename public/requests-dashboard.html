@@ -469,8 +469,22 @@
         document.getElementById('filter-delivery').addEventListener('change', renderRequests);
         document.getElementById('filter-status').addEventListener('change', renderRequests);
 
-        // Initial load
-        loadRequests();
+        // Wait for Firebase to load before initial load
+        function initDashboard() {
+            if (typeof firebase !== 'undefined' && firebase.firestore) {
+                loadRequests();
+            } else {
+                // Retry after 100ms if Firebase not ready
+                setTimeout(initDashboard, 100);
+            }
+        }
+
+        // Start initialization when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDashboard);
+        } else {
+            initDashboard();
+        }
     </script>
 </body>
 </html>
