@@ -145,12 +145,26 @@
         const loginForm = document.getElementById('login-form');
         const errorMessage = document.getElementById('error-message');
 
-        // Check if already logged in
-        window.FirebaseHelper.onAuthStateChanged((user) => {
-            if (user) {
-                window.location.href = 'admin-dashboard.html';
+        // Initialize when Firebase is ready
+        function initAdminLogin() {
+            if (typeof window.FirebaseHelper !== 'undefined' && firebase.auth) {
+                // Check if already logged in
+                window.FirebaseHelper.onAuthStateChanged((user) => {
+                    if (user) {
+                        window.location.href = 'admin-dashboard.html';
+                    }
+                });
+            } else {
+                setTimeout(initAdminLogin, 100);
             }
-        });
+        }
+
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAdminLogin);
+        } else {
+            initAdminLogin();
+        }
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();

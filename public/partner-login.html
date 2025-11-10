@@ -153,8 +153,18 @@
             errorMessage.style.display = 'block';
         }
 
+        // Initialize when Firebase is ready
+        function initPartnerLogin() {
+            if (typeof firebase !== 'undefined' && firebase.auth) {
+                setupAuthCheck();
+            } else {
+                setTimeout(initPartnerLogin, 100);
+            }
+        }
+
         // Check if already logged in
-        firebase.auth().onAuthStateChanged(async (user) => {
+        function setupAuthCheck() {
+            firebase.auth().onAuthStateChanged(async (user) => {
             if (user) {
                 try {
                     const partnerDoc = await firebase.firestore().collection('partners').doc(user.uid).get();
@@ -170,7 +180,8 @@
                     console.error('Check auth error:', error);
                 }
             }
-        });
+            });
+        }
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -224,6 +235,13 @@
                 submitBtn.textContent = originalText;
             }
         });
+
+        // Start initialization
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPartnerLogin);
+        } else {
+            initPartnerLogin();
+        }
     </script>
 </body>
 </html>
